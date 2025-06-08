@@ -1,229 +1,32 @@
 -- lua/config/keymaps.lua
--- Confirm quit function
-local function confirm_quit()
-    if vim.api.nvim_buf_get_option(0, "modified") then
-        local choice = vim.fn.confirm("Save changes?", "&Yes\n&No", 2)
-        if choice == 1 then
-            vim.cmd("wq!")
-        elseif choice == 2 then
-            vim.cmd("q!")
-        end
-    else
-        vim.cmd("q")
+--[[
+    Neovim Keymaps Configuration
+    Organization:
+    1. Core Editor Functions (save, quit, undo, redo)
+    2. Navigation and Window Management
+    3. Buffer and Tab Management
+    4. Text Manipulation
+    5. Search and Telescope Integration
+    6. File Explorer and Project Management
+    7. Custom Functions and Utilities
+    8. Plugin-Specific Mappings
+--]]
+
+-- Initialize global table for functions
+G = G or {}
+
+-- Utility function for creating keymaps
+    local function map(mode, lhs, rhs, opts)
+        opts = opts or {}
+        opts.noremap = opts.noremap ~= false
+        opts.silent = opts.silent ~= false
+        vim.keymap.set(mode, lhs, rhs, opts)
     end
-end
+    
 
-vim.keymap.set("v", "<C-q>", confirm_quit, {
-    noremap = true,
-    silent = true
-})
-vim.keymap.set("i", "<C-q>", function()
-    vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "n", true)
-    confirm_quit()
-end, {
-    noremap = true,
-    silent = true
-})
+--[[ 1. Core Editor Functions ]]--
 
--- Tab management
-vim.api.nvim_set_keymap("n", "<leader>tn", ":tabnew<CR>", {
-    noremap = true,
-    silent = true
-})
-vim.api.nvim_set_keymap("n", "<leader>tc", ":tabclose<CR>", {
-    noremap = true,
-    silent = true
-})
-vim.api.nvim_set_keymap("n", "<leader>to", ":tabonly<CR>", {
-    noremap = true,
-    silent = true
-})
-vim.api.nvim_set_keymap("n", "<leader>tnext", ":tabnext<CR>", {
-    noremap = true,
-    silent = true
-})
-vim.api.nvim_set_keymap("n", "<leader>tprev", ":tabprevious<CR>", {
-    noremap = true,
-    silent = true
-})
-vim.api.nvim_set_keymap("n", "<C-n>", ":tabnew<CR>", {
-    noremap = true,
-    silent = true
-})
-vim.api.nvim_set_keymap("i", "<C-n>", "<Esc>:tabnew<CR>", {
-    noremap = true,
-    silent = true
-})
-vim.api.nvim_set_keymap("n", "<C-j>", ":BufferLineCyclePrev<CR>", {
-    noremap = true,
-    silent = true
-})
-vim.api.nvim_set_keymap("n", "<C-k>", ":BufferLineCycleNext<CR>", {
-    noremap = true,
-    silent = true
-})
-vim.api.nvim_set_keymap("i", "<C-j>", "<Esc>:BufferLineCyclePrev<CR>", {
-    noremap = true,
-    silent = true
-})
-vim.api.nvim_set_keymap("i", "<C-k>", "<Esc>:BufferLineCycleNext<CR>", {
-    noremap = true,
-    silent = true
-})
-vim.api.nvim_set_keymap("v", "<C-j>", "<Esc>:BufferLineCyclePrev<CR>", {
-    noremap = true,
-    silent = true
-})
-vim.api.nvim_set_keymap("v", "<C-k>", "<Esc>:BufferLineCycleNext<CR>", {
-    noremap = true,
-    silent = true
-})
-
--- Horizontal scroll
-vim.api.nvim_set_keymap("", "<ScrollWheelLeft>", "zl", {
-    noremap = true,
-    silent = true
-})
-vim.api.nvim_set_keymap("", "<ScrollWheelRight>", "zh", {
-    noremap = true,
-    silent = true
-})
-
--- Completion key mappings
-local function accept_copilot_or_tab()
-	-- Attempt to accept the Copilot suggestion
-	local copilot_accepted = vim.fn["copilot#Accept"]("")
-	
-	if copilot_accepted == "" then
-	  -- No suggestion was accepted, perform the default Tab behavior
-	  if vim.fn.pumvisible() == 1 then
-		-- If the completion menu is visible, navigate it
-		return vim.api.nvim_replace_termcodes("<C-n>", true, true, true)
-	  else
-		-- Otherwise, insert a Tab character
-		return vim.api.nvim_replace_termcodes("<Tab>", true, true, true)
-	  end
-	else
-	  -- A suggestion was accepted
-	  return copilot_accepted
-	end
-  end
-  -- Make the function globally accessible
-  _G.accept_copilot_or_tab = accept_copilot_or_tab
-  
--- Set up the conditional key mapping for Tab in insert mode
-vim.api.nvim_set_keymap("i", "<Tab>", "v:lua.accept_copilot_or_tab()", {
-    expr = true,
-    silent = true
-})
-
--- Disable the default Tab mapping for Copilot
-vim.g.copilot_no_tab_map = true
-
--- vim.api.nvim_set_keymap("i", "<Tab>", [[pumvisible() ? "\<C-n>" : "\<Tab>"]], { expr = true })
-vim.api.nvim_set_keymap("i", "<S-Tab>", [[pumvisible() ? "\<C-p>" : "\<S-Tab>"]], {
-    expr = true
-})
-
--- NvimTree toggle
-vim.api.nvim_set_keymap("n", "<C-o>", ":NvimTreeToggle<CR>", {
-    noremap = true,
-    silent = true
-})
-
--- Telescope mappings
-local builtin = require("telescope.builtin")
-vim.keymap.set("n", ";", builtin.find_files, {})
-vim.keymap.set("n", ".", builtin.live_grep, {})
-vim.keymap.set("n", ",", builtin.buffers, {})
-vim.keymap.set("n", "\\", builtin.treesitter, {})
-vim.api.nvim_set_keymap("n", "<leader>gf", ":Telescope git_files<CR>", {
-    noremap = true,
-    silent = true
-})
-vim.api.nvim_set_keymap("n", "<leader>sf", ":Telescope find_files<CR>", {
-    noremap = true,
-    silent = true
-})
-vim.api.nvim_set_keymap("n", "<leader>sh", ":Telescope help_tags<CR>", {
-    noremap = true,
-    silent = true
-})
-vim.api.nvim_set_keymap("n", "<leader>sw", ":Telescope grep_string<CR>", {
-    noremap = true,
-    silent = true
-})
-vim.api.nvim_set_keymap("n", "<leader>sg", ":Telescope live_grep<CR>", {
-    noremap = true,
-    silent = true
-})
-vim.api.nvim_set_keymap("n", "<leader>sG", ":LiveGrepGitRoot<cr>", {
-    noremap = true,
-    silent = true
-})
-vim.api.nvim_set_keymap("n", "<leader>sd", ":Telescope diagnostics<CR>", {
-    noremap = true,
-    silent = true
-})
-vim.api.nvim_set_keymap("n", "<leader>sr", ":Telescope resume<CR>", {
-    noremap = true,
-    silent = true
-})
-
-vim.api.nvim_create_user_command("GrepCurrentFile", function()
-    require("telescope.builtin").current_buffer_fuzzy_find()
-end, {})
-vim.api.nvim_set_keymap("n", "<C-f>", ":GrepCurrentFile<CR>", {
-    noremap = true,
-    silent = true
-})
-vim.api.nvim_set_keymap("i", "<C-f>", "<Esc>:GrepCurrentFile<CR>i", {
-    noremap = true,
-    silent = true
-})
-
-vim.api.nvim_create_user_command("BR", function()
-    vim.cmd("split | terminal cd build && make -j32 && ./dsn")
-end, {})
-
--- Cut, copy, and paste using Ctrl-X/C/V
-vim.keymap.set("v", "<C-x>", '"+x', {
-    noremap = true,
-    silent = true,
-    desc = "Cut to clipboard"
-})
-vim.keymap.set("v", "<C-c>", '"+y', {
-    noremap = true,
-    silent = true,
-    desc = "Copy to clipboard"
-})
-vim.keymap.set("v", "<C-v>", '"_d"+P', {
-    noremap = true,
-    silent = true,
-    desc = "Paste from clipboard"
-})
-vim.keymap.set("n", "<C-v>", '"+p', {
-    noremap = true,
-    silent = true,
-    desc = "Paste from clipboard"
-})
-vim.keymap.set("i", "<C-v>", "<C-R>+", {
-    noremap = true,
-    silent = true,
-    desc = "Paste from clipboard"
-})
-
--- Undo, save, block visual mode, select all
-vim.keymap.set("n", "<C-z>", "u", {
-    noremap = true,
-    silent = true,
-    desc = "Undo"
-})
-vim.keymap.set("i", "<C-z>", "<C-O>u", {
-    noremap = true,
-    silent = true,
-    desc = "Undo"
-})
+-- Save operations
 vim.keymap.set("n", "<C-s>", ":silent! update<CR>", {
     noremap = true,
     silent = true,
@@ -239,44 +42,68 @@ vim.keymap.set("i", "<C-s>", "<Esc>:silent! update<CR>gi", {
     silent = true,
     desc = "Save"
 })
-vim.keymap.set("n", "<C-Q>", "<C-V>", {
+
+-- Quit and buffer close operations
+local function confirm_quit()
+    if vim.bo.modified then
+        local choice = vim.fn.confirm("Save changes?", "&Yes\n&No\n&Cancel", 2)
+        if choice == 1 then
+            vim.cmd("silent! wqa")
+        elseif choice == 2 then
+            vim.cmd("silent! qa!")
+        end
+    else
+        vim.cmd("silent! qa")
+    end
+    
+    -- If that fails, force exit
+    vim.schedule(function()
+        os.exit(0)
+    end)
+end
+
+-- Map for normal mode
+vim.keymap.set("n", "<C-q>", confirm_quit, {
     noremap = true,
     silent = true,
-    desc = "Visual block mode"
-})
-vim.keymap.set("n", "<C-A>", "ggVG", {
-    noremap = true,
-    silent = true,
-    desc = "Select all"
-})
-vim.keymap.set("i", "<C-A>", "<Esc>ggVG", {
-    noremap = true,
-    silent = true,
-    desc = "Select all"
-})
-vim.keymap.set("v", "<C-A>", "ggVG", {
-    noremap = true,
-    silent = true,
-    desc = "Select all"
-})
--- Redo
-vim.keymap.set("n", "<C-y>", "<C-R>", {
-    noremap = true,
-    silent = true,
-    desc = "Redo"
-})
-vim.keymap.set("i", "<C-y>", "<C-O><C-R>", {
-    noremap = true,
-    silent = true,
-    desc = "Redo"
-})
-vim.keymap.set("v", "<C-y>", "<C-R>", {
-    noremap = true,
-    silent = true,
-    desc = "Redo"
+    desc = "Quit with confirmation"
 })
 
--- Smart arrow keys
+-- Map for visual mode
+vim.keymap.set("v", "<C-q>", function()
+    -- First exit visual mode, then run confirm_quit
+    vim.cmd("normal! <Esc>")
+    confirm_quit()
+end, {
+    noremap = true,
+    silent = true,
+    desc = "Quit with confirmation"
+})
+
+-- Map for insert mode
+vim.keymap.set("i", "<C-q>", function()
+    -- First exit insert mode, then run confirm_quit
+    vim.cmd("stopinsert")
+    confirm_quit()
+end, {
+    noremap = true,
+    silent = true,
+    desc = "Quit with confirmation"
+})
+-- Undo/Redo
+vim.opt.undofile = true
+vim.opt.undodir = vim.fn.expand("~/.config/nvim/undo")
+
+vim.keymap.set("n", "<C-z>", "u", { noremap = true, silent = true, desc = "Undo" })
+vim.keymap.set("i", "<C-z>", "<C-O>u", { noremap = true, silent = true, desc = "Undo" })
+vim.keymap.set("v", "<C-z>", "u", { noremap = true, silent = true, desc = "Undo" })
+vim.keymap.set("n", "<C-y>", "<C-R>", { noremap = true, silent = true, desc = "Redo" })
+vim.keymap.set("i", "<C-y>", "<C-O><C-R>", { noremap = true, silent = true, desc = "Redo" })
+vim.keymap.set("v", "<C-y>", "<C-R>", { noremap = true, silent = true, desc = "Redo" })
+
+--[[ 2. Navigation and Window Management ]]--
+
+-- Smart arrow key navigation
 local function smart_left_arrow_insert()
     local col = vim.api.nvim_win_get_cursor(0)[2]
     if col == 0 then
@@ -286,14 +113,7 @@ local function smart_left_arrow_insert()
         return vim.api.nvim_replace_termcodes("<Left>", true, true, true)
     end
 end
-local function smart_left_arrow_normal()
-    local col = vim.api.nvim_win_get_cursor(0)[2]
-    if col == 0 then
-        vim.cmd("normal! k$")
-    else
-        vim.cmd("normal! h")
-    end
-end
+
 local function smart_right_arrow_insert()
     local col = vim.api.nvim_win_get_cursor(0)[2]
     local line = vim.api.nvim_get_current_line()
@@ -304,163 +124,247 @@ local function smart_right_arrow_insert()
         return vim.api.nvim_replace_termcodes("<Right>", true, true, true)
     end
 end
-local function smart_right_arrow_normal()
-    local col = vim.api.nvim_win_get_cursor(0)[2] + 1
-    local line = vim.api.nvim_get_current_line()
-    if col >= #line then
-        vim.cmd("normal! j0")
-    else
-        vim.cmd("normal! l")
-    end
-end
 
-vim.api.nvim_set_keymap("i", "<Left>", "", {
-    expr = true,
-    noremap = true,
-    callback = smart_left_arrow_insert
-})
-vim.api.nvim_set_keymap("n", "<Left>", "", {
-    noremap = true,
-    callback = smart_left_arrow_normal
-})
-vim.api.nvim_set_keymap("i", "<Right>", "", {
-    expr = true,
-    noremap = true,
-    callback = smart_right_arrow_insert
-})
-vim.api.nvim_set_keymap("n", "<Right>", "", {
-    noremap = true,
-    callback = smart_right_arrow_normal
-})
+-- Arrow key mappings
+vim.api.nvim_set_keymap("i", "<Left>", "", { expr = true, noremap = true, callback = smart_left_arrow_insert })
+vim.api.nvim_set_keymap("i", "<Right>", "", { expr = true, noremap = true, callback = smart_right_arrow_insert })
 
--- Remap Tab for indenting in visual mode
-vim.api.nvim_set_keymap("v", "<Tab>", ">gv", {
-    noremap = true,
-    silent = true
-})
-vim.api.nvim_set_keymap("v", "<C-Tab>", "<gv", {
-    noremap = true,
-    silent = true
-})
 
--- Source the find_replace module
-local find_replace = require("config.custom")
+-- -- Smooth scrolling with Neoscroll
+-- neoscroll = require("neoscroll")
+-- local scroll_mappings = {
+--     ["<C-e>"] = function() neoscroll.ctrl_u({ duration = 250 }) end,
+--     ["<C-d>"] = function() neoscroll.ctrl_d({ duration = 250 }) end
+-- }
 
--- Create a user command for find and replace
-vim.api.nvim_create_user_command("FindAndReplace", function()
-    find_replace.find_and_replace()
-end, {})
+-- for key, func in pairs(scroll_mappings) do
+--     vim.keymap.set({"n", "v", "x"}, key, func)
+-- end
 
--- Bind Ctrl+h to the find and replace function
-vim.api.nvim_set_keymap("n", "<C-h>", ':lua require("config.custom").find_and_replace()<CR>', {
-    noremap = true,
-    silent = true
-})
+--[[ 3. Buffer and Tab Management ]]--
 
--- init.lua
-vim.api.nvim_set_keymap("n", "<C-p>", "<cmd>Telescope commands<CR>", {
-    noremap = true,
-    silent = true
-})
+-- Tab management
+local tab_mappings = {
+    ["n|<leader>tn"] = "tabnew",
+    ["n|<leader>tc"] = "tabclose",
+    ["n|<leader>to"] = "tabonly",
+    ["n|<leader>tnext"] = "tabnext",
+    ["n|<leader>tprev"] = "tabprevious",
+    ["n|<C-n>"] = "tabnew",
+    ["i|<C-n>"] = "<Esc>:tabnew<CR>"
+}
 
-local telescope = require("telescope")
-local actions = require("telescope.actions")
-local action_state = require("telescope.actions.state")
-
--- Function to open Telescope command history
-local function open_command_history()
-    require("telescope.builtin").command_history({
-        attach_mappings = function(prompt_bufnr, map)
-            local execute_command = function()
-                local selection = action_state.get_selected_entry()
-                actions.close(prompt_bufnr)
-                vim.cmd(selection.value)
-            end
-
-            map("i", "<CR>", execute_command)
-            return true
-        end
+for mapping, cmd in pairs(tab_mappings) do
+    local mode, key = mapping:match("([^|]+)|(.+)")
+    vim.api.nvim_set_keymap(mode, key, ":" .. cmd .. "<CR>", {
+        noremap = true,
+        silent = true
     })
 end
 
--- Create a user command for opening command history
-vim.api.nvim_create_user_command("CommandHistory", function()
-    open_command_history()
-end, {})
-
--- Map `:` to open Telescope command history
--- vim.api.nvim_set_keymap("n", ":", ":CommandHistory<CR>", { noremap = true, silent = true })
-
--- map <D-s> to save file
-vim.keymap.set("n", "<D-s>", ":silent! update<CR>", {
-    noremap = true,
-    silent = true,
-    desc = "Save"
-})
-vim.keymap.set("v", "<D-s>", "<C-C>:silent! update<CR>", {
-    noremap = true,
-    silent = true,
-    desc = "Save"
-})
-vim.keymap.set("i", "<D-s>", "<Esc>:silent! update<CR>gi", {
-    noremap = true,
-    silent = true,
-    desc = "Save"
-})
-
--- map <D-x> to close buffer tab
-vim.keymap.set("n", "<D-x>", ":bd<CR>", {
-    noremap = true,
-    silent = true,
-    desc = "Close buffer"
-})
--- also in visual and insert mode
-vim.keymap.set("v", "<D-x>", "<C-C>:bd<CR>", {
-    noremap = true,
-    silent = true,
-    desc = "Close buffer"
-})
-vim.keymap.set("i", "<D-x>", "<Esc>:bd<CR>", {
-    noremap = true,
-    silent = true,
-    desc = "Close buffer"
-})
-
--- Map mouse scroll to Neoscroll commands
-local map = vim.api.nvim_set_keymap
-local opts = { noremap = true, silent = true }
-
-map('n', '<ScrollWheelUp>', ':lua require("neoscroll").scroll(-10, true, 10, nil)<CR>', opts)
-map('n', '<ScrollWheelDown>', ':lua require("neoscroll").scroll(10, true, 10, nil)<CR>', opts)
-
--- Visual mode scrolling
-map('v', '<ScrollWheelUp>', ':lua require("neoscroll").scroll(-10, true, 10, nil)<CR>', opts)
-map('v', '<ScrollWheelDown>', ':lua require("neoscroll").scroll(10, true, 10, nil)<CR>', opts)
-
-neoscroll = require('neoscroll')
-local keymap = {
-  ["<C-e>"] = function() neoscroll.ctrl_u({ duration = 250 }) end;
-  ["<C-d>"] = function() neoscroll.ctrl_d({ duration = 250 }) end;
+-- Buffer navigation with BufferLine
+local modes = {'n', 'i', 'v'}
+local buffer_mappings = {
+    ['<C-K>'] = 'bn',
+    ['<C-J>'] = 'bp'
 }
-local modes = { 'n', 'v', 'x' }
-for key, func in pairs(keymap) do
-  vim.keymap.set(modes, key, func)
+
+for _, mode in ipairs(modes) do
+    for key, cmd in pairs(buffer_mappings) do
+        local prefix = mode == 'n' and '' or '<Esc>'
+        vim.keymap.set(mode, key, prefix .. '<cmd>' .. cmd .. '<CR>', {
+            noremap = true,
+            silent = true
+        })
+    end
 end
 
--- Function to handle smooth scrolling in visual mode
-_G.handle_visual_scroll = function()
-    if vim.fn.mode() == 'v' or vim.fn.mode() == 'V' or vim.fn.mode() == '<C-v>' then
-      require('neoscroll').scroll(1, true, 100, nil)
-      require('neoscroll').scroll(-1, true, 100, nil)
-    end
-  end
-  
-  -- Autocommand group to maintain smooth scrolling behavior in visual mode
-  vim.cmd([[
-    augroup SmoothScrollOnDrag
-      autocmd!
-      autocmd CursorMoved,VimResized,WinScrolled * lua _G.handle_visual_scroll()
-    augroup END
-  ]])
+--[[ 4. Text Manipulation ]]--
 
-  
+-- Clipboard operations
+vim.keymap.set("v", "<C-x>", '"+x', { noremap = true, silent = true, desc = "Cut to clipboard" })
+vim.keymap.set("v", "<C-c>", '"+y', { noremap = true, silent = true, desc = "Copy to clipboard" })
+vim.keymap.set("v", "<C-v>", '"_d"+P', { noremap = true, silent = true, desc = "Paste from clipboard" })
+vim.keymap.set("n", "<C-v>", '"+p', { noremap = true, silent = true, desc = "Paste from clipboard" })
+vim.keymap.set("i", "<C-v>", "<C-R>+", { noremap = true, silent = true, desc = "Paste from clipboard" })
+
+-- Selection operations
+vim.keymap.set("n", "<C-A>", "ggVG", { noremap = true, silent = true, desc = "Select all" })
+vim.keymap.set("i", "<C-A>", "<Esc>ggVG", { noremap = true, silent = true, desc = "Select all" })
+vim.keymap.set("v", "<C-A>", "ggVG", { noremap = true, silent = true, desc = "Select all" })
+
+-- Indentation
+vim.api.nvim_set_keymap("v", "<Tab>", ">gv", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("v", "<C-Tab>", "<gv", { noremap = true, silent = true })
+
+--[[ 5. Search and Telescope Integration ]]--
+-- Telescope custom find_files using fd
+local builtin = require("telescope.builtin")
+
+vim.keymap.set("n", ";", function()
+  local excludes = {
+    ".git", ".vscode", "node_modules", ".mypy_cache", "__pycache__",
+    ".venv", ".pytest_cache", ".cache", ".idea", ".DS_Store",
+    "Thumbs.db", ".gitignore", ".env", "package-lock.json",
+    "yarn.lock", "pnpm-lock.yaml", "flash-attention"
+  }
+
+  local fd_args = { "fd", "--type", "f", "--hidden", "--no-ignore", "--no-ignore-parent" }
+  for _, pattern in ipairs(excludes) do
+    table.insert(fd_args, "--exclude")
+    table.insert(fd_args, pattern)
+  end
+
+  builtin.find_files({
+    hidden = true,
+    no_ignore = true,
+    no_ignore_parent = true,
+    find_command = fd_args,
+  })
+end, { desc = "Telescope find_files with fd + clean excludes" })
+
+vim.keymap.set("n", ".", builtin.live_grep, {})
+vim.keymap.set("n", ",", builtin.buffers, {})
+vim.keymap.set("n", "\\", builtin.treesitter, {})
+
+local telescope_mappings = {
+    ["<leader>gf"] = "git_files",
+    ["<leader>sf"] = "find_files",
+    ["<leader>sh"] = "help_tags",
+    ["<leader>sw"] = "grep_string",
+    ["<leader>sg"] = "live_grep",
+    ["<leader>sd"] = "diagnostics",
+    ["<leader>sr"] = "resume"
+}
+
+for key, cmd in pairs(telescope_mappings) do
+    vim.api.nvim_set_keymap("n", key, ":Telescope " .. cmd .. "<CR>", {
+        noremap = true,
+        silent = true
+    })
+end
+
+-- Enhanced buffer search
+vim.keymap.set({"n", "i"}, "<C-f>", function()
+    if vim.fn.mode() == 'i' then
+        vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<Esc>', true, false, true), 'n', false)
+    end
+
+    require('telescope.builtin').current_buffer_fuzzy_find({
+        layout_strategy = 'vertical',
+        layout_config = {
+            width = 0.6,
+            height = 0.6,
+            prompt_position = "top",
+            preview_height = 0.4
+        },
+        sorting_strategy = "ascending",
+        prompt_title = "Search in Current Buffer",
+        previewer = true,
+        initial_mode = "insert",
+        path_display = {"truncate"},
+        results_title = false
+    })
+end, { desc = "Search in current buffer" })
+
+--[[ 7. Custom Functions and Utilities ]]--
+
+-- Build commands
+vim.api.nvim_create_user_command("BR", function()
+    vim.cmd("split | terminal cd build && make -j32 && ./dsn")
+end, {})
+
+
+-- Find and replace
+vim.keymap.set('n', '<C-h>', function()
+    require('config.custom').find_and_replace()
+end, {
+    noremap = true,
+    silent = true,
+    desc = "Find and Replace"
+})
+
+--[[ 8. Plugin-Specific Mappings ]]--
+
+-- Enhanced build system
+local function smart_build()
+    local build_commands = {
+        cpp = "make -j$(nproc)",
+        rust = "cargo build",
+        go = "go build",
+        typescript = "npm run build",
+        javascript = "npm run build"
+    }
+
+    local filetype = vim.bo.filetype
+    local cmd = build_commands[filetype]
+
+    if cmd then
+        vim.cmd('write')
+        vim.cmd('split')
+        vim.cmd('terminal ' .. cmd)
+        vim.cmd('startinsert')
+    else
+        vim.notify("No build command defined for filetype: " .. filetype, vim.log.levels.WARN)
+    end
+end
+
+map('n', '<F5>', smart_build, { desc = "Smart build" })
+
+
+local function accept_copilot_or_tab()
+  local suggestion = require("copilot.suggestion")
+  if suggestion.is_visible() then
+    suggestion.accept()
+    return ""
+  elseif vim.fn.pumvisible() == 1 then
+    return vim.api.nvim_replace_termcodes("<C-n>", true, true, true)
+  else
+    return vim.api.nvim_replace_termcodes("<Tab>", true, true, true)
+  end
+end
+
+
+G.accept_copilot_or_tab = accept_copilot_or_tab
+vim.g.copilot_no_tab_map = true
+vim.api.nvim_set_keymap("i", "<Tab>", "v:lua.G.accept_copilot_or_tab()", {
+    expr = true,
+    silent = true
+})
+
+-- Switch to specific buffer using Ctrl + Number
+for i = 1, 9 do
+    vim.keymap.set('n', '<C-' .. i .. '>', function()
+        -- Get a list of all listed buffers
+        local buflist = vim.fn.getbufinfo({ buflisted = 1 })
+        -- Check if the requested buffer exists
+        if i <= #buflist then
+            vim.cmd('buffer ' .. buflist[i].bufnr)
+        else
+            vim.notify("Buffer " .. i .. " does not exist", vim.log.levels.WARN)
+        end
+    end, {
+        noremap = true,
+        silent = true,
+        desc = "Switch to buffer " .. i
+    })
+end
+
+vim.keymap.set("n", "<C-b>", function()
+  require("nabla").popup({ border = "single" }) -- or "double", "rounded"
+end, { desc = "Nabla popup" })
+
+vim.keymap.set("n", "<leader>fr", require("config.custom").find_and_replace, {
+    noremap = true,
+    silent = true,
+    desc = "Find and Replace"
+})
+
+-- Replace <C-e> to open nvim-tree
+vim.keymap.set("n", "<C-e>", function()
+  require("nvim-tree.api").tree.toggle()
+end, {
+  noremap = true,
+  silent = true,
+  desc = "Toggle NvimTree"
+})

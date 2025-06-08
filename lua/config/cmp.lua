@@ -1,41 +1,108 @@
+-- Enhanced config/cmp.lua - preserving your original style
 local cmp = require("cmp")
-local lspkind = require('lspkind')
 
--- Define field arrangements for different styles
-local field_arrangement = {
-    atom = {"kind", "abbr", "menu"},
-    atom_colored = {"kind", "abbr", "menu"}
-}
-
--- Define formatting styles
-local formatting_style = {
-    fields = field_arrangement[cmp_style] or {"abbr", "kind", "menu"},
-    format = function(_, item)
-        return item
-    end
-}
--- Helper function to create border
-local function border(hl_name)
-    return {{"╭", hl_name}, {"─", hl_name}, {"╮", hl_name}, {"│", hl_name}, {"╯", hl_name}, {"─", hl_name},
-            {"╰", hl_name}, {"│", hl_name}}
+-- Safe require for lspkind with fallback
+local has_lspkind, lspkind = pcall(require, 'lspkind')
+if not has_lspkind then
+    vim.notify("lspkind not found, using fallback icons", vim.log.levels.WARN)
+    lspkind = {
+        cmp_format = function(opts)
+            return function(_, vim_item)
+                local kind_icons = {
+                    Text = "", Method = "󰆧", Function = "󰊕", Constructor = "",
+                    Field = "󰇽", Variable = "󰂡", Class = "󰠱", Interface = "",
+                    Module = "", Property = "󰜢", Unit = "", Value = "󰎠",
+                    Enum = "", Keyword = "󰌋", Snippet = "", Color = "󰏘",
+                    File = "󰈙", Reference = "", Folder = "󰉋", EnumMember = "",
+                    Constant = "󰏿", Struct = "", Event = "", Operator = "󰆕",
+                    TypeParameter = "󰅲"
+                }
+                vim_item.kind = string.format('%s %s', kind_icons[vim_item.kind] or "", vim_item.kind)
+                if opts.maxwidth and #vim_item.abbr > opts.maxwidth then
+                    vim_item.abbr = string.sub(vim_item.abbr, 1, opts.maxwidth - 3) .. (opts.ellipsis_char or "...")
+                end
+                return vim_item
+            end
+        end
+    }
 end
 
--- Options configuration for cmp
+local cmpstyle = vim.g.cmp_style or "default"
+
+local field_arrangement = {
+    atom = {"kind", "abbr", "menu"},
+    atom_colored = {"kind", "abbr", "menu"},
+    default = {"abbr", "kind", "menu"},
+    minimal = {"abbr", "kind"}
+}
+
+local formatting_style = {
+    fields = field_arrangement[cmpstyle] or field_arrangement.default,
+    format = function(entry, vim_item)
+        return lspkind.cmp_format({
+            mode = 'symbol_text',
+            maxwidth = 50,
+            ellipsis_char = '...',
+            show_labelDetails = true,
+            before = function(entry, vim_item)
+                local source_names = {
+                    nvim_lsp = "[LSP]",
+                    luasnip = "[Snip]",
+                    buffer = "[Buf]",
+                    path = "[Path]",
+                    calc = "[Calc]",
+                    emoji = "[Emoji]",
+                    spell = "[Spell]",
+                    cmdline = "[Cmd]",
+                    nvim_lsp_signature_help = "[Sig]"
+                }
+                vim_item.menu = source_names[entry.source.name] or string.format("[%s]", entry.source.name)
+                if cmpstyle == "atom" or cmpstyle == "atom_colored" then
+                    vim_item.menu = ""
+                end
+                return vim_item
+            end
+        })(entry, vim_item)
+    end
+}
+
+local function border(hl_name)
+    local borders = {
+        default = {
+            {"╭", hl_name}, {"─", hl_name}, {"╮", hl_name}, {"│", hl_name},
+            {"╯", hl_name}, {"─", hl_name}, {"╰", hl_name}, {"│", hl_name}
+        },
+        rounded = {
+            {"╭", hl_name}, {"─", hl_name}, {"╮", hl_name}, {"│", hl_name},
+            {"╯", hl_name}, {"─", hl_name}, {"╰", hl_name}, {"│", hl_name}
+        },
+        sharp = {
+            {"┌", hl_name}, {"─", hl_name}, {"┐", hl_name}, {"│", hl_name},
+            {"┘", hl_name}, {"─", hl_name}, {"└", hl_name}, {"│", hl_name}
+        }
+    }
+    return borders[vim.g.cmp_border_style or "default"] or borders.default
+end
+
 local options = {
     completion = {
-        completeopt = "menu,menuone"
+        completeopt = "menu,menuone,noinsert",
+        keyword_length = 1,
     },
     window = {
         completion = {
-            side_padding = (cmp_style ~= "atom" and cmp_style ~= "atom_colored") and 1 or 0,
+            side_padding = (cmpstyle ~= "atom" and cmpstyle ~= "atom_colored") and 1 or 0,
             winhighlight = "Normal:CmpPmenu,CursorLine:PmenuSel,Search:None",
             scrollbar = false,
-            max_height = 10 -- Set the maximum number of items before scrolling
+            max_height = 12,
+            col_offset = 0,
+            border = nil,
         },
         documentation = {
             border = border("CmpDocBorder"),
             winhighlight = "Normal:CmpDoc,FloatBorder:CmpDocBorder",
-            max_height = 10
+            max_height = 15,
+            max_width = 80,
         }
     },
     snippet = {
@@ -43,79 +110,116 @@ local options = {
             require("luasnip").lsp_expand(args.body)
         end
     },
-    formatting = {
-        format = lspkind.cmp_format({
-            mode = 'symbol_text', -- show only symbol annotations
-            maxwidth = 50, -- prevent the popup from showing more than provided characters (e.g 50 will not show more than 50 characters)
-            -- can also be a function to dynamically calculate max width such as 
-            -- maxwidth = function() return math.floor(0.45 * vim.o.columns) end,
-            ellipsis_char = '...', -- when popup menu exceed maxwidth, the truncated part would show ellipsis_char instead (must define maxwidth first)
-            show_labelDetails = true, -- show labelDetails in menu. Disabled by default
-
-            -- The function below will be called before any actual modifications from lspkind
-            -- so that you can provide more controls on popup customization. (See [#30](https://github.com/onsails/lspkind-nvim/pull/30))
-            before = function(entry, vim_item)
-                -- do some customizations ...
-                return vim_item
-            end
-        })
-    },
-    mapping = {
+    formatting = formatting_style,
+    mapping = cmp.mapping.preset.insert({
         ["<C-p>"] = cmp.mapping.select_prev_item(),
         ["<C-n>"] = cmp.mapping.select_next_item(),
         ["<C-d>"] = cmp.mapping.scroll_docs(-4),
         ["<C-f>"] = cmp.mapping.scroll_docs(4),
-        -- ["<C-Enter>"] = cmp.mapping.complete(),
         ["<C-e>"] = cmp.mapping.close(),
-        ["<C-Enter>"] = cmp.mapping.confirm({
-            behavior = cmp.ConfirmBehavior.Insert,
-            select = true
-        }),
-        ["<C-Tab>"] = cmp.mapping(function(fallback)
-            if cmp.visible() then
-                cmp.select_next_item()
-            elseif require("luasnip").expand_or_jumpable() then
-                vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<Plug>luasnip-expand-or-jump", true, true, true), "")
-            else
-                fallback()
-            end
-        end, {"i", "s"}),
+        -- ["<Tab>"] = cmp.mapping(function(fallback)
+        --     if cmp.visible() then cmp.select_next_item() else fallback() end
+        -- end, {"i", "s"}),
         ["<S-Tab>"] = cmp.mapping(function(fallback)
-            if cmp.visible() then
-                cmp.select_prev_item()
-            elseif require("luasnip").jumpable(-1) then
-                vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<Plug>luasnip-jump-prev", true, true, true), "")
-            else
-                fallback()
-            end
-        end, {"i", "s"})
-    },
-    sources = {{
-        name = "nvim_lsp",
-        max_item_count = 5
+            if cmp.visible() then cmp.select_prev_item() else fallback() end
+        end, {"i", "s"}),
+        ["<C-Tab>"] = cmp.mapping(function(fallback)
+            if cmp.visible() then cmp.select_next_item()
+            elseif require("luasnip").expand_or_jumpable() then require("luasnip").expand_or_jump()
+            else fallback() end
+        end, {"i", "s"}),
+        ["<CR>"] = cmp.mapping({
+            i = function(fallback)
+                if cmp.visible() and cmp.get_active_entry() then
+                    cmp.confirm({ behavior = cmp.ConfirmBehavior.Replace, select = false })
+                else fallback() end
+            end,
+            s = cmp.mapping.confirm({ select = true }),
+            c = cmp.mapping.confirm({ behavior = cmp.ConfirmBehavior.Replace, select = true }),
+        }),
+    }),
+    sources = cmp.config.sources({
+        { name = "nvim_lsp", max_item_count = 8, priority = 1000, group_index = 1 },
+        { name = "luasnip", max_item_count = 5, priority = 750, group_index = 1 },
+        { name = "path", max_item_count = 5, priority = 500, group_index = 1 },
     }, {
-        name = "luasnip",
-        max_item_count = 5
-    }, {
-        name = "buffer",
-        max_item_count = 5
-    }, -- { name = "nvim_lua", max_item_count = 5 },
-    {
-        name = "path",
-        max_item_count = 5
-    }},
-
+        { name = "buffer", max_item_count = 5, priority = 250, group_index = 2, keyword_length = 3 }
+    }),
     sorting = {
-        comparators = {cmp.config.compare.offset, cmp.config.compare.exact, cmp.config.compare.recently_used,
-                       require("clangd_extensions.cmp_scores"), cmp.config.compare.kind, cmp.config.compare.sort_text,
-                       cmp.config.compare.length, cmp.config.compare.order}
-    }
-
+        priority_weight = 2,
+        comparators = {
+            cmp.config.compare.offset,
+            cmp.config.compare.exact,
+            cmp.config.compare.score,
+            cmp.config.compare.recently_used,
+            cmp.config.compare.locality,
+            cmp.config.compare.kind,
+            cmp.config.compare.sort_text,
+            cmp.config.compare.length,
+            cmp.config.compare.order,
+        }
+    },
+    performance = {
+        debounce = 60,
+        throttle = 30,
+        fetching_timeout = 500,
+        confirm_resolve_timeout = 80,
+        async_budget = 1,
+        max_view_entries = 200,
+    },
+    experimental = {
+        ghost_text = {
+            hl_group = "CmpGhostText",
+        },
+    },
+    matching = {
+        disallow_fuzzy_matching = false,
+        disallow_fullfuzzy_matching = false,
+        disallow_partial_fuzzy_matching = true,
+        disallow_partial_matching = false,
+        disallow_prefix_unmatching = false,
+    },
 }
 
--- Add border for non-atom styles
-if cmp_style ~= "atom" and cmp_style ~= "atom_colored" then
+if cmpstyle ~= "atom" and cmpstyle ~= "atom_colored" then
     options.window.completion.border = border("CmpBorder")
 end
+
+vim.api.nvim_create_autocmd("FileType", {
+    pattern = { "markdown", "text" },
+    callback = function()
+        cmp.setup.buffer({
+            sources = cmp.config.sources({
+                { name = "spell", max_item_count = 5 },
+                { name = "buffer", max_item_count = 5 },
+                { name = "path", max_item_count = 3 },
+            })
+        })
+    end,
+})
+
+vim.defer_fn(function()
+    pcall(function()
+        cmp.setup.cmdline({ '/', '?' }, {
+            mapping = cmp.mapping.preset.cmdline(),
+            sources = { { name = 'buffer' } },
+        })
+        cmp.setup.cmdline(':', {
+            mapping = cmp.mapping.preset.cmdline(),
+            sources = cmp.config.sources({ { name = 'path' } }, { { name = 'cmdline' } })
+        })
+    end)
+end, 100)
+
+vim.api.nvim_create_autocmd("ColorScheme", {
+    callback = function()
+        vim.api.nvim_set_hl(0, "CmpGhostText", { link = "Comment", default = true })
+        vim.api.nvim_set_hl(0, "CmpPmenu", { bg = "NONE" })
+        vim.api.nvim_set_hl(0, "CmpSel", { bg = "#4C566A", fg = "NONE" })
+        vim.api.nvim_set_hl(0, "CmpDoc", { bg = "NONE" })
+        vim.api.nvim_set_hl(0, "CmpBorder", { fg = "#5E81AC" })
+        vim.api.nvim_set_hl(0, "CmpDocBorder", { fg = "#5E81AC" })
+    end,
+})
 
 return options

@@ -1,56 +1,113 @@
--- lua/plugins/mini.lua
-return {{
-    'RRethy/vim-illuminate',
-    version = false,
-    config = function()
-        -- default configuration
-        require('illuminate').configure({
-            -- providers: provider used to get references in the buffer, ordered by priority
-            providers = {'lsp', 'treesitter', 'regex'},
-            -- delay: delay in milliseconds
-            delay = 100,
-            -- filetype_overrides: filetype specific overrides.
-            -- The keys are strings to represent the filetype while the values are tables that
-            -- supports the same keys passed to .configure except for filetypes_denylist and filetypes_allowlist
-            filetype_overrides = {},
-            -- filetypes_denylist: filetypes to not illuminate, this overrides filetypes_allowlist
-            filetypes_denylist = {'dirbuf', 'dirvish', 'fugitive'},
-            -- filetypes_allowlist: filetypes to illuminate, this is overridden by filetypes_denylist
-            -- You must set filetypes_denylist = {} to override the defaults to allow filetypes_allowlist to take effect
-            filetypes_allowlist = {},
-            -- modes_denylist: modes to not illuminate, this overrides modes_allowlist
-            -- See `:help mode()` for possible values
-            modes_denylist = {},
-            -- modes_allowlist: modes to illuminate, this is overridden by modes_denylist
-            -- See `:help mode()` for possible values
-            modes_allowlist = {},
-            -- providers_regex_syntax_denylist: syntax to not illuminate, this overrides providers_regex_syntax_allowlist
-            -- Only applies to the 'regex' provider
-            -- Use :echom synIDattr(synIDtrans(synID(line('.'), col('.'), 1)), 'name')
-            providers_regex_syntax_denylist = {},
-            -- providers_regex_syntax_allowlist: syntax to illuminate, this is overridden by providers_regex_syntax_denylist
-            -- Only applies to the 'regex' provider
-            -- Use :echom synIDattr(synIDtrans(synID(line('.'), col('.'), 1)), 'name')
-            providers_regex_syntax_allowlist = {},
-            -- under_cursor: whether or not to illuminate under the cursor
-            under_cursor = true,
-            -- large_file_cutoff: number of lines at which to use large_file_config
-            -- The `under_cursor` option is disabled when this cutoff is hit
-            large_file_cutoff = nil,
-            -- large_file_config: config to use for large files (based on large_file_cutoff).
-            -- Supports the same keys passed to .configure
-            -- If nil, vim-illuminate will be disabled for large files.
-            large_file_overrides = nil,
-            -- min_count_to_highlight: minimum number of matches required to perform highlighting
-            min_count_to_highlight = 1,
-            -- should_enable: a callback that overrides all other settings to
-            -- enable/disable illumination. This will be called a lot so don't do
-            -- anything expensive in it.
-            should_enable = function(bufnr)
-                return true
-            end,
-            -- case_insensitive_regex: sets regex case sensitivity
-            case_insensitive_regex = false
-        })
+return {
+  'RRethy/vim-illuminate',
+  event = { "BufReadPost", "BufNewFile" },
+
+  keys = {
+    { "]]", desc = "Next Reference" },
+    { "[[", desc = "Previous Reference" },
+    { "]r", desc = "Next Reference" },
+    { "[r", desc = "Previous Reference" },
+    { "<leader>hi", function() require("illuminate").toggle() end, desc = "Toggle Illumination" },
+    { "<leader>ht", function() require("illuminate").toggle_buf() end, desc = "Toggle Buffer Illumination" },
+    { "<leader>hp", function() require("illuminate").pause() end, desc = "Pause Illumination" },
+    { "<leader>hr", function() require("illuminate").resume() end, desc = "Resume Illumination" },
+    { "<leader>hf", function() require("illuminate").toggle_freeze_buf() end, desc = "Freeze Buffer Illumination" },
+  },
+
+  opts = {
+    delay = 100,
+    large_file_cutoff = 3000,
+    large_file_overrides = {
+      providers = { "lsp", "treesitter" },
+      delay = 200,
+      min_count_to_highlight = 2,
+    },
+    modes_denylist = { "i", "t", "c", "r", "R", "v", "V", "\x16" },
+    filetypes_denylist = {
+      "dirvish", "fugitive", "NvimTree", "TelescopePrompt", "Trouble",
+      "mason", "lazy", "alpha", "dashboard", "help", "qf", "toggleterm",
+      "harpoon", "DressingSelect", "neo-tree", "notify", "noice", "WhichKey",
+      "wildmenu", "gitcommit", "oil", "log", "txt", "markdown"
+    },
+    under_cursor = true,
+    min_count_to_highlight = 2,
+    providers = { "lsp", "treesitter", "regex" },
+    providers_regex_syntax_denylist = {
+      "Comment", "String", "Number", "Boolean", "Character", "Constant",
+      "Special", "Identifier", "PreProc", "Todo",
+    },
+    case_insensitive_regex = true,
+  },
+
+  config = function(_, opts)
+    local illuminate = require("illuminate")
+    illuminate.configure(opts)
+
+    -- #### Key Mappings (with buffer override support)
+    local function map(key, dir, buffer)
+      vim.keymap.set("n", key, function()
+        illuminate["goto_" .. dir .. "_reference"](false)
+      end, {
+        desc = dir:sub(1, 1):upper() .. dir:sub(2) .. " Reference",
+        buffer = buffer,
+        silent = true,
+        noremap = true,
+      })
     end
-}}
+
+    map("]]", "next")
+    map("[[", "prev")
+    map("]r", "next")
+    map("[r", "prev")
+
+    vim.api.nvim_create_autocmd("FileType", {
+      group = vim.api.nvim_create_augroup("IlluminateMapping", { clear = true }),
+      callback = function()
+        local buf = vim.api.nvim_get_current_buf()
+        map("]]", "next", buf)
+        map("[[", "prev", buf)
+        map("]r", "next", buf)
+        map("[r", "prev", buf)
+      end,
+    })
+
+    -- #### Highlight Setup
+    vim.api.nvim_create_autocmd("ColorScheme", {
+      group = vim.api.nvim_create_augroup("IlluminateHighlight", { clear = true }),
+      callback = function()
+        local set = function(name, opts)
+          opts.default = true
+          vim.api.nvim_set_hl(0, name, opts)
+        end
+
+        -- Link to LSP highlights if defined
+        set("IlluminatedWordText", { link = "LspReferenceText" })
+        set("IlluminatedWordRead", { link = "LspReferenceRead" })
+        set("IlluminatedWordWrite", { link = "LspReferenceWrite" })
+
+        -- Fallback highlights
+        set("IlluminatedWord", {
+          bg = "#3c3836",
+          fg = "NONE",
+        })
+        set("IlluminatedWordUnderCursor", {
+          bg = "#504945",
+          fg = "NONE",
+          bold = true,
+        })
+      end,
+    })
+
+    -- #### Large File Optimization
+    vim.api.nvim_create_autocmd("BufReadPre", {
+      group = vim.api.nvim_create_augroup("IlluminatePerformance", { clear = true }),
+      callback = function(args)
+        local size = vim.fn.getfsize(args.match)
+        if size > opts.large_file_cutoff * 1024 then
+          illuminate.pause_buf()
+          vim.notify("Illumination paused (file > " .. opts.large_file_cutoff .. " KB)", vim.log.levels.INFO)
+        end
+      end,
+    })
+  end,
+}
