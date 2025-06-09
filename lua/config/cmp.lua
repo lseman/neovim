@@ -117,6 +117,7 @@ local options = {
         ["<C-d>"] = cmp.mapping.scroll_docs(-4),
         ["<C-f>"] = cmp.mapping.scroll_docs(4),
         ["<C-e>"] = cmp.mapping.close(),
+        ["<C-CR>"] = cmp.mapping.confirm({ behavior = cmp.ConfirmBehavior.Replace, select = true }),  -- ← This line
         -- ["<Tab>"] = cmp.mapping(function(fallback)
         --     if cmp.visible() then cmp.select_next_item() else fallback() end
         -- end, {"i", "s"}),
@@ -128,15 +129,15 @@ local options = {
             elseif require("luasnip").expand_or_jumpable() then require("luasnip").expand_or_jump()
             else fallback() end
         end, {"i", "s"}),
-        ["<CR>"] = cmp.mapping({
-            i = function(fallback)
-                if cmp.visible() and cmp.get_active_entry() then
-                    cmp.confirm({ behavior = cmp.ConfirmBehavior.Replace, select = false })
-                else fallback() end
-            end,
-            s = cmp.mapping.confirm({ select = true }),
-            c = cmp.mapping.confirm({ behavior = cmp.ConfirmBehavior.Replace, select = true }),
-        }),
+        -- ["<CR>"] = cmp.mapping({
+        --     i = function(fallback)
+        --         if cmp.visible() and cmp.get_active_entry() then
+        --             cmp.confirm({ behavior = cmp.ConfirmBehavior.Replace, select = false })
+        --         else fallback() end
+        --     end,
+        --     s = cmp.mapping.confirm({ select = true }),
+        --     c = cmp.mapping.confirm({ behavior = cmp.ConfirmBehavior.Replace, select = true }),
+        -- }),
     }),
     sources = cmp.config.sources({
         { name = "nvim_lsp", max_item_count = 8, priority = 1000, group_index = 1 },

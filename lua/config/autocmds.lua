@@ -31,7 +31,13 @@ autocmd("CursorHold", {
 local kitty = {
     set_spacing = function(padding, margin)
         if vim.fn.executable("kitty") == 1 then
-            vim.system(string.format("kitty @ set-spacing padding=%d margin=%d", padding, margin))
+            vim.system({
+                "kitty",
+                "@",
+                "set-spacing",
+                string.format("padding=%d", padding),
+                string.format("margin=%d", margin)
+            })
         end
     end
 }
