@@ -4,6 +4,7 @@ return {
     "nvim-tree/nvim-web-devicons",
     "nvim-lua/plenary.nvim",
   },
+  lazy = false,
 
   keys = {
     { "<leader>e",  "<cmd>NvimTreeToggle<CR>",    desc = "Toggle NvimTree" },
@@ -28,7 +29,7 @@ return {
     filesystem_watchers = {
       enable = true,
       debounce_delay = 100,
-      ignore_dirs = { ".git", "node_modules", ".cache" },
+      -- NOTE: "ignore_dirs" is not required; we filter via `filters.custom`
     },
 
     sort = {
@@ -90,17 +91,12 @@ return {
           folder_arrow = true,
           git = true,
           modified = true,
+          -- NOTE: do NOT put `diagnostics` here; it's configured in `diagnostics` below
         },
         glyphs = {
-          default = "",
-          symlink = "",
+          -- Keep defaults for safety; empty strings can cause odd spacing
           bookmark = "󰆤",
           modified = "●",
-          folder = {
-            arrow_closed = "", arrow_open = "",
-            default = "", open = "", empty = "",
-            empty_open = "", symlink = "", symlink_open = "",
-          },
           git = {
             unstaged = "✗", staged = "✓", renamed = "➜",
             untracked = "★", ignored = "◌",
@@ -110,7 +106,7 @@ return {
       },
 
       special_files = {
-        "Cargo.toml", "Makefile", "README.md", "readme.md", "CMakeLists.txt"
+        "Cargo.toml", "Makefile", "README.md", "readme.md", "CMakeLists.txt",
       },
       symlink_destination = true,
     },
@@ -119,10 +115,17 @@ return {
     filters = {
       dotfiles = true,
       git_ignored = false,
+      -- Lua patterns (NOT PCRE): escape dot with %.
       custom = {
-        "^\\.git$", "^node_modules$", "^.null%-ls.*$"
+        "^%.git$",          -- .git directories
+        "^node_modules$",   -- node_modules directories
+        "^%.null%-ls.*$",   -- .null-ls* (use %- to escape -)
+        "%.csv$",           -- files ending with .csv
+        "%.css$",           -- files ending with .css
+        "%.pdf$",           -- files ending with .pdf
+        "%.xlsx$",          -- files ending with .xlsx
       },
-      exclude = { ".gitignore", ".env" },
+      exclude = { ".gitignore", ".env" }, -- always show exactly these
     },
 
     -- ─── Git & Modified ──────────────────────────────────────
@@ -176,8 +179,9 @@ return {
     },
 
     -- ─── Diagnostics ─────────────────────────────────────────
+    -- Keep disabled to avoid Unknown sign issues.
     diagnostics = {
-      enable = true,
+      enable = false,
       show_on_dirs = true,
       show_on_open_dirs = true,
       debounce_delay = 50,
@@ -185,9 +189,8 @@ return {
         min = vim.diagnostic.severity.HINT,
         max = vim.diagnostic.severity.ERROR,
       },
-      icons = {
-        hint = "", info = "", warning = "", error = "",
-      },
+      -- No custom icons -> use defaults when enabling
+      -- icons = { hint="", info="", warning="", error="" },
     },
 
     -- ─── Extras ──────────────────────────────────────────────
@@ -197,11 +200,7 @@ return {
     },
 
     tab = {
-      sync = {
-        open = false,
-        close = false,
-        ignore = {},
-      },
+      sync = { open = false, close = false, ignore = {} },
     },
 
     notify = {
@@ -209,9 +208,7 @@ return {
       absolute_path = true,
     },
 
-    help = {
-      sort_by = "key",
-    },
+    help = { sort_by = "key" },
 
     ui = {
       confirm = {
@@ -231,27 +228,24 @@ return {
       local api = require("nvim-tree.api")
       local function map(lhs, fn, desc)
         vim.keymap.set("n", lhs, fn, {
-          buffer = bufnr,
-          desc = "nvim-tree: " .. desc,
-          noremap = true,
-          silent = true,
-          nowait = true,
+          buffer = bufnr, desc = "nvim-tree: " .. desc,
+          noremap = true, silent = true, nowait = true,
         })
       end
 
-      -- Default
+      -- Defaults
       api.config.mappings.default_on_attach(bufnr)
 
       -- Custom
-      map("?",      api.tree.toggle_help,         "Help")
-      map("Z",      api.node.run.system,          "Run System")
-      map("gs",     api.node.run.system,          "Run System")
-      map("yy",     api.fs.copy.node,             "Copy Node")
-      map("yn",     api.fs.copy.filename,         "Copy Filename")
-      map("yp",     api.fs.copy.absolute_path,    "Copy Absolute Path")
-      map("<C-k>",  api.node.show_info_popup,     "Show Info")
-      map("S",      api.tree.search_node,         "Search Node")
-      map("U",      api.tree.toggle_custom_filter,"Toggle Filter")
+      map("?",      api.tree.toggle_help,          "Help")
+      map("Z",      api.node.run.system,           "Run System")
+      map("gs",     api.node.run.system,           "Run System")
+      map("yy",     api.fs.copy.node,              "Copy Node")
+      map("yn",     api.fs.copy.filename,          "Copy Filename")
+      map("yp",     api.fs.copy.absolute_path,     "Copy Absolute Path")
+      map("<C-k>",  api.node.show_info_popup,      "Show Info")
+      map("S",      api.tree.search_node,          "Search Node")
+      map("U",      api.tree.toggle_custom_filter, "Toggle Filter")
     end,
   },
 }

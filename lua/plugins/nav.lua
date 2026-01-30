@@ -6,84 +6,123 @@ return {
     "MunifTanjim/nui.nvim",
     "neovim/nvim-lspconfig",
   },
-  config = function()
-    local navbuddy = require("nvim-navbuddy")
-    local actions = require("nvim-navbuddy.actions")
 
-    -- ── Setup Navbuddy ─────────────────────────────────────
-    navbuddy.setup({
-      window = {
-        border = "rounded",
-        size = "75%",
-        position = "50%",
-        sections = {
-          left = { size = "25%" },
-          mid  = { size = "35%" },
-          right = { size = "40%" },
-        },
+  opts = {
+    window = {
+      border = "rounded",
+      size = { height = "60%", width = "80%" },  -- slightly smaller & responsive
+      position = "50%",
+      sections = {
+        left = { size = "25%" },
+        mid = { size = "35%" },
+        right = { size = "40%" },
       },
-
-      node_markers = {
+      preview = {
         enabled = true,
-        icons = {
-          leaf = "  ",
-          leaf_selected = " ",
-          branch = " ",
-        },
+        border = "rounded",
+        size = { height = "60%", width = "50%" },
       },
+    },
 
-      lsp = {
-        auto_attach = true,
-        preference = nil,
-      },
-
+    node_markers = {
+      enabled = true,
       icons = {
-        File = "󰈔 ", Module = "󰆧 ", Namespace = "󰌗 ", Package = "󰏗 ",
-        Class = "󰠱 ", Method = "󰊕 ", Property = "󰜢 ", Field = "󰇽 ",
-        Constructor = " ", Enum = "󰕘 ", Interface = "󰕘 ", Function = "󰊕 ",
-        Variable = "󰀫 ", Constant = "󰏿 ", String = "󰀬 ", Number = "󰎠 ",
-        Boolean = "󰨙 ", Array = "󰅪 ", Object = "󰅩 ", Key = "󰌋 ",
-        Null = "󰟢 ", EnumMember = " ", Struct = "󰙅 ", Event = "󰉁 ",
-        Operator = "󰆕 ", TypeParameter = "󰊄 ", Component = "󰡀 ",
-        Fragment = "󰅴 ",
+        leaf = "  ",
+        leaf_selected = "➜ ",
+        branch = "▸ ",
       },
+    },
 
-      mappings = {
-        -- Close
-        ["<esc>"] = actions.close(), ["q"] = actions.close(), ["<C-c>"] = actions.close(),
+    icons = {
+      File          = "󰈙 ",
+      Module        = " ",
+      Namespace     = "󰌗 ",
+      Package       = " ",
+      Class         = "󰠱 ",
+      Method        = "󰊕 ",
+      Property      = " ",
+      Field         = " ",
+      Constructor   = " ",
+      Enum          = "󰖽 ",
+      Interface     = " ",
+      Function      = "󰊕 ",
+      Variable      = "󰀫 ",
+      Constant      = "󰏿 ",
+      String        = "󰉿 ",
+      Number        = "󰎠 ",
+      Boolean       = "󰨙 ",
+      Array         = "󰅪 ",
+      Object        = "󰅩 ",
+      Key           = "󰌋 ",
+      Null          = "󰟢 ",
+      EnumMember    = " ",
+      Struct        = "󰙅 ",
+      Event         = " ",
+      Operator      = "󰆕 ",
+      TypeParameter = "󰊄 ",
+      Component     = "󰡀 ",
+      Fragment      = "󰅴 ",
+      FolderClosed  = " ",
+      FolderOpen    = " ",
+    },
 
-        -- Movement
-        ["h"] = actions.parent(), ["<Left>"] = actions.parent(),
-        ["l"] = actions.children(), ["<Right>"] = actions.children(),
-        ["k"] = actions.previous_sibling(), ["<Up>"] = actions.previous_sibling(),
-        ["j"] = actions.next_sibling(), ["<Down>"] = actions.next_sibling(),
+    use_default_mappings = false,  -- important: avoid conflicts
 
-        -- Select
-        ["<CR>"] = actions.select(), ["o"] = actions.select(), ["<2-LeftMouse>"] = actions.select(),
-        ["<S-CR>"] = actions.select(),
+    mappings = {
+      ["<esc>"] = require("nvim-navbuddy.actions").close(),
+      ["q"]     = require("nvim-navbuddy.actions").close(),
+      ["<C-c>"] = require("nvim-navbuddy.actions").close(),
 
-        -- Visual
-        ["v"] = actions.visual_name(), ["V"] = actions.visual_scope(), ["<C-v>"] = actions.visual_name(),
+      ["h"]     = require("nvim-navbuddy.actions").parent(),
+      ["<Left>"] = require("nvim-navbuddy.actions").parent(),
+      ["l"]     = require("nvim-navbuddy.actions").children(),
+      ["<Right>"] = require("nvim-navbuddy.actions").children(),
 
-        -- Navigation
-        ["0"] = actions.root(), ["s"] = actions.toggle_preview(),
+      ["k"]     = require("nvim-navbuddy.actions").previous_sibling(),
+      ["<Up>"]  = require("nvim-navbuddy.actions").previous_sibling(),
+      ["j"]     = require("nvim-navbuddy.actions").next_sibling(),
+      ["<Down>"] = require("nvim-navbuddy.actions").next_sibling(),
 
-        -- Help
-        ["?"] = actions.help(),
-      },
+      ["<CR>"]  = require("nvim-navbuddy.actions").select(),
+      ["o"]     = require("nvim-navbuddy.actions").select(),
+      ["<2-LeftMouse>"] = require("nvim-navbuddy.actions").select(),
+
+      ["v"]     = require("nvim-navbuddy.actions").visual_name(),
+      ["V"]     = require("nvim-navbuddy.actions").visual_scope(),
+      ["<C-v>"] = require("nvim-navbuddy.actions").visual_name(),
+
+      ["s"]     = require("nvim-navbuddy.actions").toggle_preview(),
+      ["?"]     = require("nvim-navbuddy.actions").help(),
+      ["0"]     = require("nvim-navbuddy.actions").root(),
+    },
+
+    lsp = {
+      auto_attach = true,
+      preference = nil,  -- or { "tsserver", "pyright", ... } if you want priority
+    },
+
+    reorient = true,  -- auto-scroll to current symbol
+  },
+
+  config = function(_, opts)
+    require("nvim-navbuddy").setup(opts)
+
+    -- Buffer-local keymap only when LSP is attached
+    vim.api.nvim_create_autocmd("LspAttach", {
+      group = vim.api.nvim_create_augroup("NavbuddyKeymaps", { clear = true }),
+      callback = function(args)
+        local bufnr = args.buf
+        local client = vim.lsp.get_client_by_id(args.data.client_id)
+        if client and client.supports_method("textDocument/documentSymbol") then
+          vim.keymap.set("n", "<leader>nb", function()
+            require("nvim-navbuddy").open()
+          end, { buffer = bufnr, desc = "Open Navbuddy" })
+
+          vim.keymap.set("n", "<C-b>", function()
+            require("nvim-navbuddy").open()
+          end, { buffer = bufnr, desc = "Navbuddy (Ctrl+B)" })
+        end
+      end,
     })
-
-    -- ── Keybindings ────────────────────────────────────────
-    local map = vim.keymap.set
-    local opts = { noremap = true, silent = true }
-
-    local function open_navbuddy()
-      require("nvim-navbuddy").open()
-    end
-
-    map("n", "<leader>nb", open_navbuddy, vim.tbl_extend("force", opts, { desc = "Open Navbuddy" }))
-    map("n", "<C-b>",     open_navbuddy, vim.tbl_extend("force", opts, { desc = "Open Navbuddy (Ctrl-B)" }))
-    map("n", "<leader>ns", open_navbuddy, vim.tbl_extend("force", opts, { desc = "Navigate Symbols" }))
-
   end,
 }

@@ -1,31 +1,99 @@
 return {
-  "neovim/nvim-lspconfig",
-  event = { "BufReadPre", "BufNewFile" },
-  dependencies = {
-    "hrsh7th/cmp-nvim-lsp",
-    "nvim-telescope/telescope.nvim",
-    "nvim-telescope/telescope-fzf-native.nvim",
-    "p00f/clangd_extensions.nvim",
-    "Civitasv/cmake-tools.nvim",
-    "barreiroleo/ltex_extra.nvim", -- Optional: grammar/language tool
+  -- Core LSP + bridge to native config
+  { "neovim/nvim-lspconfig", version = "*" }, -- still recommended in 0.11+
+
+  -- Optional but strongly recommended: auto-install servers
+  {
+    "williamboman/mason.nvim",
+    lazy = true,
+    opts = { ui = { border = "rounded" } },
+  },
+  {
+    "williamboman/mason-lspconfig.nvim",
+    dependencies = { "williamboman/mason.nvim" },
+    opts = {
+      ensure_installed = {
+        "basedpyright",
+        "ruff",
+        "clangd",
+        "vhdl_ls",
+        -- "cmake",          -- uncomment if you want cmake-language-server
+      },
+      automatic_installation = true,
+    },
+  },
+
+  -- Your other dependencies
+  "hrsh7th/cmp-nvim-lsp",
+  "nvim-telescope/telescope.nvim",
+  "nvim-telescope/telescope-fzf-native.nvim",
+  "p00f/clangd_extensions.nvim",
+  "Civitasv/cmake-tools.nvim",
+
+  -- Navbuddy stack
+  {
+    "SmiteshP/nvim-navbuddy",
+    dependencies = {
+      "SmiteshP/nvim-navic",
+      "MunifTanjim/nui.nvim",
+      "numToStr/Comment.nvim", -- optional
+    },
+    opts = {
+      lsp = { auto_attach = true },
+    },
   },
 
   config = function()
     local lspconfig = require("lspconfig")
-    local telescope = require("telescope")
 
-    -- ========================
-    -- Capabilities
-    -- ========================
-    local capabilities = require("cmp_nvim_lsp").default_capabilities(
-      vim.lsp.protocol.make_client_capabilities()
+    -- Global capabilities (do once)
+    local capabilities = vim.tbl_deep_extend(
+      "force",
+      vim.lsp.protocol.make_client_capabilities(),
+      require("cmp_nvim_lsp").default_capabilities()
     )
-    capabilities.offsetEncoding = { "utf-16", "utf-8" }
+    capabilities.offsetEncoding = { "utf-16" } -- most common safe choice
 
-    -- ========================
-    -- Telescope Setup
-    -- ========================
-    telescope.setup({
+    -- ── Centralized on_attach ───────────────────────────────────────
+    local on_attach = function(client, bufnr)
+      -- You can add client-specific logic here if needed
+      -- e.g. if client.name == "basedpyright" then ... end
+
+      local map = function(mode, lhs, rhs, desc)
+        vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, desc = desc, silent = true })
+      end
+
+      -- Clear any conflicting <F2> (optional safety)
+      pcall(vim.keymap.del, "n", "<F2>", { buffer = bufnr })
+
+      map("n", "gd", "<cmd>Telescope lsp_definitions<CR>",  "Definition")
+      map("n", "gr", "<cmd>Telescope lsp_references<CR>",   "References")
+      map("n", "gI", "<cmd>Telescope lsp_implementations<CR>", "Implementation")
+      map("n", "K",  vim.lsp.buf.hover,                     "Hover")
+      map("n", "<leader>rn", vim.lsp.buf.rename,            "Rename")
+      map("n", "<F2>", vim.lsp.buf.code_action,             "Code Action")
+      map("n", "<leader>sh", vim.lsp.buf.signature_help,    "Signature Help")
+      map("n", "<leader>fm", vim.lsp.buf.format,            "Format (LSP)")
+      map("n", "<leader>ds", "<cmd>Telescope lsp_document_symbols<CR>",  "Doc Symbols")
+      map("n", "<leader>ws", "<cmd>Telescope lsp_workspace_symbols<CR>", "WS Symbols")
+      map("n", "<leader>fd", "<cmd>Telescope diagnostics<CR>", "Diagnostics")
+
+      -- Diagnostic navigation
+      map("n", "<leader>dl", vim.diagnostic.open_float, "Line diag")
+      map("n", "[d",         vim.diagnostic.goto_prev,  "Prev diag")
+      map("n", "]d",         vim.diagnostic.goto_next,  "Next diag")
+
+      -- NavBuddy
+      map("n", "<leader>nb", require("nvim-navbuddy").open, "NavBuddy")
+
+      -- Optional: only enable inlay hints for clients that support them well
+      if client.supports_method("textDocument/inlayHint") then
+        vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
+      end
+    end
+
+    -- ── Telescope setup ─────────────────────────────────────────────
+    require("telescope").setup({
       defaults = {
         path_display = { "smart" },
         mappings = {
@@ -36,114 +104,91 @@ return {
         },
       },
       pickers = {
-        lsp_definitions       = { theme = "dropdown" },
-        lsp_references        = { theme = "dropdown" },
-        lsp_implementations   = { theme = "dropdown" },
-        lsp_type_definitions  = { theme = "dropdown" },
+        lsp_definitions     = { theme = "dropdown" },
+        lsp_references      = { theme = "dropdown" },
+        lsp_implementations = { theme = "dropdown" },
+        lsp_type_definitions= { theme = "dropdown" },
       },
     })
-    pcall(telescope.load_extension, "fzf")
+    pcall(require("telescope").load_extension, "fzf")
 
-    -- ========================
-    -- LSP Keymaps
-    -- ========================
-    local function setup_lsp_keymaps(_, bufnr)
-      local map = function(mode, lhs, rhs, desc)
-        vim.keymap.set(mode, lhs, rhs, {
-          buffer = bufnr,
-          noremap = true,
-          silent = true,
-          desc = desc,
+    -- ── Servers ─────────────────────────────────────────────────────
+    -- Let mason-lspconfig handle most of them automatically
+    require("mason-lspconfig").setup_handlers({
+      -- default handler
+      function(server_name)
+        lspconfig[server_name].setup({
+          capabilities = capabilities,
+          on_attach = on_attach,
         })
-      end
+      end,
 
-      map("n", "gd", "<cmd>Telescope lsp_definitions<CR>", "Goto Definition")
-      map("n", "gr", "<cmd>Telescope lsp_references<CR>", "Find References")
-      map("n", "gI", "<cmd>Telescope lsp_implementations<CR>", "Goto Implementation")
-      map("n", "K", vim.lsp.buf.hover, "Hover Info")
-      map("n", "<leader>rn", vim.lsp.buf.rename, "Rename Symbol")
-      map("n", "<F1>", vim.lsp.buf.code_action, "Code Action")
-      map("n", "<leader>sh", vim.lsp.buf.signature_help, "Signature Help")
-      map("n", "<leader>fm", vim.lsp.buf.format, "Format Code")
-      map("n", "<leader>ds", "<cmd>Telescope lsp_document_symbols<CR>", "Document Symbols")
-      map("n", "<leader>ws", "<cmd>Telescope lsp_workspace_symbols<CR>", "Workspace Symbols")
-      map("n", "<leader>fd", "<cmd>Telescope diagnostics<CR>", "Show Diagnostics")
-    end
-
-    -- ========================
-    -- LSP Servers
-    -- ========================
-
-    -- Pyright
-    lspconfig.pyright.setup({
-      on_attach = setup_lsp_keymaps,
-      capabilities = capabilities,
-      settings = {
-        python = {
-          analysis = {
-            typeCheckingMode = "basic", -- "strict" is also available
-            autoSearchPaths = true,
-            useLibraryCodeForTypes = true,
+      -- basedpyright (custom settings)
+      ["basedpyright"] = function()
+        lspconfig.basedpyright.setup({
+          capabilities = capabilities,
+          on_attach = on_attach,
+          settings = {
+            basedpyright = {
+              analysis = {
+                typeCheckingMode = "standard",          -- or "strict"
+                diagnosticSeverityOverrides = {
+                  reportUnusedImport     = "none",
+                  reportUnusedVariable   = "none",
+                  reportUnusedExpression = "none",
+                  reportDuplicateImport  = "none",
+                  reportMissingImports   = "warning",
+                },
+                autoImportCompletions = true,
+                useLibraryCodeForTypes = true,
+              },
+            },
           },
-        },
-      },
+        })
+      end,
+
+      -- clangd (with extensions)
+      ["clangd"] = function()
+        lspconfig.clangd.setup({
+          capabilities = capabilities,
+          on_attach = function(client, bufnr)
+            on_attach(client, bufnr)                   -- your common keymaps
+            require("clangd_extensions").setup({})     -- inlay hints, etc
+          end,
+          cmd = {
+            "clangd",
+            "--background-index",
+            "--header-insertion=iwyu",
+            "--function-arg-placeholders",
+            "--fallback-style=llvm",
+            "--all-scopes-completion",
+            "--completion-style=detailed",
+          },
+        })
+      end,
     })
 
-    -- Optional: Ruff LSP (commented)
-    -- lspconfig.ruff_lsp.setup({
-    --   on_attach = setup_lsp_keymaps,
-    --   capabilities = capabilities,
-    --   init_options = {
-    --     settings = { args = {} },
-    --   },
-    -- })
+    -- If you really don't want mason for vhdl_ls, you can still do:
+    -- lspconfig.vhdl_ls.setup({ capabilities = capabilities, on_attach = on_attach })
 
-    -- Clangd (via clangd_extensions)
-    local clangd_cmd = {
-      "clangd",
-      "--background-index=false",
-      "--header-insertion=iwyu",
-      "--function-arg-placeholders",
-      "--fallback-style=llvm",
-      "--all-scopes-completion",
-      "--completion-style=detailed",
-    }
-
-    require("clangd_extensions").setup({
-      server = {
-        cmd = clangd_cmd,
-        capabilities = capabilities,
-        on_attach = setup_lsp_keymaps,
-        init_options = {
-          usePlaceholders = true,
-          completeUnimported = true,
-          clangdFileStatus = true,
-        },
-      },
-    })
-
-    -- ========================
-    -- CMake Tools Setup
-    -- ========================
+    -- ── Extra tools ─────────────────────────────────────────────────
     require("cmake-tools").setup({
-      cmake_command = "cmake",
       cmake_build_directory = "build",
-      cmake_generate_options = { "-D", "CMAKE_EXPORT_COMPILE_COMMANDS=1" },
-      cmake_build_options = {},
-      cmake_console_size = 10,
-      cmake_show_console = "always",
-      cmake_dap_configuration = {
-        name = "cpp",
-        type = "codelldb",
-        request = "launch",
-      },
+      cmake_generate_options = { "-DCMAKE_EXPORT_COMPILE_COMMANDS=1" },
+      -- …
     })
 
-    -- ========================
-    -- Global Inlay Hints
-    -- ========================
-    if vim.lsp.inlay_hint then
-      vim.lsp.inlay_hint.enable(true)
-    end
+    -- Conform (formatting fallback / ruff)
+    require("conform").setup({
+      formatters_by_ft = {
+        python = { "ruff_fix", "ruff_format" },
+      },
+      notify_on_error = false,
+    })
+
+    -- Optional extra Conform keymap
+    vim.keymap.set("n", "<leader>cf", function()
+      require("conform").format({ async = false, lsp_fallback = true })
+    end, { desc = "Format (Conform)" })
   end,
 }

@@ -5,7 +5,7 @@ return {
         position = "bottom",
         height = 10,
         width = 50,
-        icons = true,
+        -- icons = true,
         mode = "workspace_diagnostics",
         severity = nil,
         fold_open = "",

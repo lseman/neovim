@@ -2,7 +2,7 @@ return {
   "hrsh7th/nvim-cmp",
   event = "InsertEnter",
   dependencies = {
-    -- LuaSnip setup
+    -- Snippets
     {
       "L3MON4D3/LuaSnip",
       build = "make install_jsregexp",
@@ -15,7 +15,6 @@ return {
         updateevents = "TextChanged,TextChangedI",
         delete_check_events = "TextChanged,InsertLeave",
         enable_autosnippets = true,
-        -- store_selection_keys = "<Tab>",
         region_check_events = "CursorMoved",
       },
       config = function(_, opts)
@@ -34,7 +33,7 @@ return {
       end,
     },
 
-    -- Autopairs setup
+    -- Autopairs (configured in its own spec)
     {
       "windwp/nvim-autopairs",
       event = "InsertEnter",
@@ -70,9 +69,7 @@ return {
         local npairs = require("nvim-autopairs")
         local Rule = require("nvim-autopairs.rule")
         local cond = require("nvim-autopairs.conds")
-
         npairs.setup(opts)
-
         npairs.add_rules({
           Rule("f'", "'", "python"):with_pair(cond.before_regex("%a+")),
           Rule('f"', '"', "python"):with_pair(cond.before_regex("%a+")),
@@ -82,19 +79,30 @@ return {
       end,
     },
 
-    -- Completion sources
+    -- Sources
     { "saadparwaiz1/cmp_luasnip", priority = 1000 },
     { "hrsh7th/cmp-nvim-lsp", priority = 1000 },
+    { "hrsh7th/cmp-nvim-lsp-signature-help", priority = 900 },
     { "hrsh7th/cmp-buffer", priority = 500 },
     { "hrsh7th/cmp-path", priority = 750 },
     { "hrsh7th/cmp-calc", priority = 300 },
+    { "hrsh7th/cmp-cmdline" },     -- you were calling cmdline without this
+    { "hrsh7th/cmp-emoji" },       -- you listed emoji source
+    { "f3fora/cmp-spell" },        -- you listed spell source
   },
 
   config = function()
     local cmp = require("cmp")
     local ls = require("luasnip")
-    local npairs = require("nvim-autopairs")
     local cmp_autopairs = require("nvim-autopairs.completion.cmp")
+
+    -- Super Tab helpers
+    local function has_words_before()
+      local line, col = unpack(vim.api.nvim_win_get_cursor(0))
+      if col == 0 then return false end
+      local prev = vim.api.nvim_buf_get_text(0, line - 1, col - 1, line - 1, col, {})[1]
+      return prev and not prev:match("%s")
+    end
 
     local icons = {
       Text = "", Method = "󰆧", Function = "󰊕", Field = "󰇽", Variable = "󰂡",
@@ -103,9 +111,9 @@ return {
     }
 
     local source_labels = {
-      nvim_lsp = "[LSP]", luasnip = "[Snip]", buffer = "[Buf]",
-      path = "[Path]", calc = "[Calc]", emoji = "[Emoji]",
-      spell = "[Spell]", nvim_lsp_signature_help = "[Sig]",
+      nvim_lsp = "[LSP]", nvim_lsp_signature_help = "[Sig]",
+      luasnip = "[Snip]", path = "[Path]", buffer = "[Buf]",
+      calc = "[Calc]", emoji = "[Emoji]", spell = "[Spell]",
     }
 
     cmp.setup({
@@ -123,6 +131,7 @@ return {
           return vim.tbl_filter(function(c) return c ~= " " end, chars)
         end,
       },
+
       mapping = cmp.mapping.preset.insert({
         ["<C-k>"] = cmp.mapping.select_prev_item(),
         ["<C-j>"] = cmp.mapping.select_next_item(),
@@ -132,30 +141,47 @@ return {
         ["<CR>"] = cmp.mapping(function(fb)
           if cmp.visible() and cmp.get_active_entry() then
             cmp.confirm({ behavior = cmp.ConfirmBehavior.Replace, select = false })
-          else fb() end
+          else
+            fb()
+          end
         end, { "i", "s", "c" }),
+
+        -- -- Super Tab: cmp -> snippet jump -> insert tab
         -- ["<Tab>"] = cmp.mapping(function(fb)
-        --   if cmp.visible() then cmp.select_next_item()
-        --   elseif ls.locally_jumpable(1) then ls.jump(1)
-        --   else fb() end
+        --   if cmp.visible() then
+        --     cmp.select_next_item()
+        --   elseif ls.expand_or_jumpable() then
+        --     ls.expand_or_jump()
+        --   elseif has_words_before() then
+        --     cmp.complete()
+        --   else
+        --     fb()
+        --   end
         -- end, { "i", "s" }),
+
         ["<S-Tab>"] = cmp.mapping(function(fb)
-          if cmp.visible() then cmp.select_prev_item()
-          elseif ls.locally_jumpable(-1) then ls.jump(-1)
-          else fb() end
+          if cmp.visible() then
+            cmp.select_prev_item()
+          elseif ls.jumpable(-1) then
+            ls.jump(-1)
+          else
+            fb()
+          end
         end, { "i", "s" }),
       }),
+
       sources = cmp.config.sources({
         { name = "nvim_lsp", priority = 1000 },
-        { name = "nvim_lsp_signature_help", priority = 800 },
+        { name = "nvim_lsp_signature_help", priority = 850 },
         { name = "luasnip", priority = 750 },
-        { name = "path", priority = 500 },
+        { name = "path", priority = 600 },
       }, {
-        { name = "buffer", priority = 300, keyword_length = 3 },
+        { name = "buffer", priority = 350, keyword_length = 3 },
         { name = "calc", priority = 200 },
-        { name = "emoji", priority = 100 },
-        { name = "spell", priority = 50, keyword_length = 4 },
+        { name = "emoji", priority = 120 },
+        { name = "spell", priority = 80, keyword_length = 4, option = { keep_all_entries = false } },
       }),
+
       formatting = {
         fields = { "kind", "abbr", "menu" },
         format = function(entry, vim_item)
@@ -167,10 +193,18 @@ return {
           return vim_item
         end,
       },
+
       window = {
-        completion = cmp.config.window.bordered({ border = "rounded", winhighlight = "Normal:CmpPmenu,CursorLine:CmpSel" }),
-        documentation = cmp.config.window.bordered({ border = "rounded", winhighlight = "Normal:CmpDoc" }),
+        completion = cmp.config.window.bordered({
+          border = "rounded",
+          winhighlight = "Normal:CmpPmenu,CursorLine:CmpSel",
+        }),
+        documentation = cmp.config.window.bordered({
+          border = "rounded",
+          winhighlight = "Normal:CmpDoc",
+        }),
       },
+
       performance = {
         debounce = 60,
         throttle = 30,
@@ -179,41 +213,41 @@ return {
         async_budget = 1,
         max_view_entries = 200,
       },
+
       experimental = {
         ghost_text = { hl_group = "CmpGhostText" },
       },
     })
 
-    -- Extra config if user module exists
+    -- Optional user overrides
     local ok, user_config = pcall(require, "config.cmp")
     if ok and type(user_config) == "table" then
       cmp.setup(vim.tbl_deep_extend("force", {}, user_config))
     end
 
-    -- Confirm completion triggers autopairs
-    npairs.setup({})
+    -- Hook autopairs on confirm (don’t re-run npairs.setup here)
     cmp.event:on("confirm_done", cmp_autopairs.on_confirm_done())
 
-    -- Cmdline completions
+    -- Cmdline completion (requires cmp-cmdline)
     cmp.setup.cmdline({ "/", "?" }, {
       mapping = cmp.mapping.preset.cmdline(),
       sources = { { name = "buffer" } },
     })
-
     cmp.setup.cmdline(":", {
       mapping = cmp.mapping.preset.cmdline(),
       sources = cmp.config.sources({ { name = "path" } }, { { name = "cmdline" } }),
     })
 
-    -- Filetype-specific sources
+    -- Filetype-specific tweaks
     cmp.setup.filetype("gitcommit", {
-      sources = cmp.config.sources({ { name = "buffer" }, { name = "spell" } }),
+      sources = cmp.config.sources({ { name = "buffer", keyword_length = 3 }, { name = "spell", keyword_length = 4 } }),
     })
-
     cmp.setup.filetype("markdown", {
       sources = cmp.config.sources({
-        { name = "spell" }, { name = "buffer" },
-        { name = "path" }, { name = "emoji" },
+        { name = "spell", keyword_length = 4 },
+        { name = "buffer", keyword_length = 3 },
+        { name = "path" },
+        { name = "emoji" },
       }),
     })
 
@@ -229,7 +263,7 @@ return {
       end,
     })
 
-    -- Highlight groups
+    -- Highlights
     vim.api.nvim_set_hl(0, "CmpGhostText", { link = "Comment", default = true })
     vim.api.nvim_set_hl(0, "CmpPmenu", { bg = "NONE" })
     vim.api.nvim_set_hl(0, "CmpSel", { bg = "#4C566A", fg = "NONE" })

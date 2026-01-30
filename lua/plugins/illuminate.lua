@@ -1,57 +1,76 @@
 return {
-  'RRethy/vim-illuminate',
+  "RRethy/vim-illuminate",
   event = { "BufReadPost", "BufNewFile" },
 
   keys = {
     { "]]", desc = "Next Reference" },
     { "[[", desc = "Previous Reference" },
-    { "]r", desc = "Next Reference" },
-    { "[r", desc = "Previous Reference" },
-    { "<leader>hi", function() require("illuminate").toggle() end, desc = "Toggle Illumination" },
-    { "<leader>ht", function() require("illuminate").toggle_buf() end, desc = "Toggle Buffer Illumination" },
-    { "<leader>hp", function() require("illuminate").pause() end, desc = "Pause Illumination" },
-    { "<leader>hr", function() require("illuminate").resume() end, desc = "Resume Illumination" },
-    { "<leader>hf", function() require("illuminate").toggle_freeze_buf() end, desc = "Freeze Buffer Illumination" },
+    { "]r", desc = "Next Reference (illuminate)" },
+    { "[r", desc = "Previous Reference (illuminate)" },
+    { "<leader>hi", function() require("illuminate").toggle() end,        desc = "Toggle Illuminate" },
+    { "<leader>ht", function() require("illuminate").toggle_buf() end,    desc = "Toggle Buffer Illuminate" },
+    { "<leader>hp", function() require("illuminate").pause() end,         desc = "Pause Illuminate" },
+    { "<leader>hr", function() require("illuminate").resume() end,        desc = "Resume Illuminate" },
+    { "<leader>hf", function() require("illuminate").toggle_freeze_buf() end, desc = "Freeze Buffer Illuminate" },
   },
 
   opts = {
-    delay = 100,
-    large_file_cutoff = 3000,
-    large_file_overrides = {
-      providers = { "lsp", "treesitter" },
-      delay = 200,
-      min_count_to_highlight = 2,
-    },
-    modes_denylist = { "i", "t", "c", "r", "R", "v", "V", "\x16" },
-    filetypes_denylist = {
-      "dirvish", "fugitive", "NvimTree", "TelescopePrompt", "Trouble",
-      "mason", "lazy", "alpha", "dashboard", "help", "qf", "toggleterm",
-      "harpoon", "DressingSelect", "neo-tree", "notify", "noice", "WhichKey",
-      "wildmenu", "gitcommit", "oil", "log", "txt", "markdown"
-    },
+    -- Delay (ms) before highlighting
+    delay = 120,
+
+    -- Highlight under cursor even if count is low
     under_cursor = true,
+
+    -- Minimum # of matches before highlighting
     min_count_to_highlight = 2,
-    providers = { "lsp", "treesitter", "regex" },
+
+    -- Providers in priority order
+    providers = {
+      "lsp",
+      "treesitter",
+      "regex",
+    },
+
+    -- Disable in these modes
+    modes_denylist = { "i", "c", "t", "r", "R", "v", "V", "\22" },
+
+    -- Disable in these filetypes (good list — you can add more UI buffers)
+    filetypes_denylist = {
+      "dirvish", "fugitive", "NvimTree", "neo-tree", "TelescopePrompt",
+      "Trouble", "mason", "lazy", "alpha", "dashboard", "help", "qf",
+      "toggleterm", "harpoon", "DressingSelect", "notify", "noice",
+      "WhichKey", "wildmenu", "gitcommit", "oil", "log", "txt", "markdown",
+    },
+
+    -- Large file handling
+    large_file_cutoff = 3000, -- lines
+    large_file_overrides = {
+      providers = { "lsp", "treesitter" }, -- regex is too slow on huge files
+      delay = 300,
+      min_count_to_highlight = 3,
+    },
+
+    -- Regex provider: avoid highlighting literals
     providers_regex_syntax_denylist = {
-      "Comment", "String", "Number", "Boolean", "Character", "Constant",
-      "Special", "Identifier", "PreProc", "Todo",
+      "Comment", "String", "Character", "Number", "Boolean",
+      "Constant", "Special", "Identifier", "PreProc", "Todo",
     },
     case_insensitive_regex = true,
   },
 
   config = function(_, opts)
     local illuminate = require("illuminate")
+
+    -- Configure once
     illuminate.configure(opts)
 
-    -- #### Key Mappings (with buffer override support)
-    local function map(key, dir, buffer)
+    -- Navigation keymaps (plugin already supports count with vim.v.count1)
+    local function map(key, direction)
       vim.keymap.set("n", key, function()
-        illuminate["goto_" .. dir .. "_reference"](false)
+        illuminate["goto_" .. direction .. "_reference"](false)
       end, {
-        desc = dir:sub(1, 1):upper() .. dir:sub(2) .. " Reference",
-        buffer = buffer,
+        desc = direction:gsub("^%l", string.upper) .. " Reference",
         silent = true,
-        noremap = true,
       })
     end
 
@@ -60,52 +79,57 @@ return {
     map("]r", "next")
     map("[r", "prev")
 
-    vim.api.nvim_create_autocmd("FileType", {
-      group = vim.api.nvim_create_augroup("IlluminateMapping", { clear = true }),
-      callback = function()
-        local buf = vim.api.nvim_get_current_buf()
-        map("]]", "next", buf)
-        map("[[", "prev", buf)
-        map("]r", "next", buf)
-        map("[r", "prev", buf)
+    -- Optional: buffer-local remap only when illuminate is active
+    vim.api.nvim_create_autocmd("User", {
+      pattern = "IlluminateAttach",
+      callback = function(args)
+        local bufnr = args.data.buf
+        -- You could add buffer-specific keys here if needed
       end,
     })
 
-    -- #### Highlight Setup
+    -- ── Highlights ────────────────────────────────────────────────
     vim.api.nvim_create_autocmd("ColorScheme", {
-      group = vim.api.nvim_create_augroup("IlluminateHighlight", { clear = true }),
+      group = vim.api.nvim_create_augroup("IlluminateHighlights", { clear = true }),
       callback = function()
-        local set = function(name, opts)
-          opts.default = true
-          vim.api.nvim_set_hl(0, name, opts)
+        local function set_hl(name, val)
+          vim.api.nvim_set_hl(0, name, vim.tbl_extend("force", { default = true }, val))
         end
 
-        -- Link to LSP highlights if defined
-        set("IlluminatedWordText", { link = "LspReferenceText" })
-        set("IlluminatedWordRead", { link = "LspReferenceRead" })
-        set("IlluminatedWordWrite", { link = "LspReferenceWrite" })
+        -- Prefer linking to LSP references when available
+        set_hl("IlluminatedWordText",  { link = "LspReferenceText",  default = true })
+        set_hl("IlluminatedWordRead",  { link = "LspReferenceRead",  default = true })
+        set_hl("IlluminatedWordWrite", { link = "LspReferenceWrite", default = true })
 
-        -- Fallback highlights
-        set("IlluminatedWord", {
-          bg = "#3c3836",
-          fg = "NONE",
+        -- Fallback subtle style (bg only, no fg change)
+        set_hl("IlluminatedWord", {
+          bg = "#3c3836",   -- dark gray (gruvbox dark)
+          underline = true,
+          sp = "#fabd2f",   -- subtle yellow undercurl
         })
-        set("IlluminatedWordUnderCursor", {
+
+        -- Under cursor highlight (slightly stronger)
+        set_hl("IlluminatedWordUnderCursor", {
           bg = "#504945",
-          fg = "NONE",
           bold = true,
+          underline = true,
+          sp = "#fe8019",
         })
       end,
     })
 
-    -- #### Large File Optimization
-    vim.api.nvim_create_autocmd("BufReadPre", {
-      group = vim.api.nvim_create_augroup("IlluminatePerformance", { clear = true }),
+    -- ── Large file auto-pause ─────────────────────────────────────
+    vim.api.nvim_create_autocmd("BufRead", {
+      group = vim.api.nvim_create_augroup("IlluminateLargeFile", { clear = true }),
       callback = function(args)
-        local size = vim.fn.getfsize(args.match)
-        if size > opts.large_file_cutoff * 1024 then
-          illuminate.pause_buf()
-          vim.notify("Illumination paused (file > " .. opts.large_file_cutoff .. " KB)", vim.log.levels.INFO)
+        if vim.bo[args.buf].buftype ~= "" then return end
+
+        local lines = vim.api.nvim_buf_line_count(args.buf)
+        if lines > opts.large_file_cutoff then
+          vim.defer_fn(function()
+            illuminate.pause_buf(args.buf)
+            -- vim.notify("Illumination paused (large file)", vim.log.levels.INFO)
+          end, 100)
         end
       end,
     })

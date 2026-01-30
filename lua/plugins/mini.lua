@@ -5,50 +5,51 @@ return {
     event = "VeryLazy",
 
     keys = {
-      {
-        "<Leader>mm",
-        function() require("mini.map").toggle() end,
-        desc = "Toggle Mini Map",
+      { "<leader>mm", function() require("mini.map").toggle() end, desc = "Toggle Mini Map" },
+      { "<leader>mr", function() require("mini.map").refresh() end, desc = "Refresh Mini Map" },
+    },
+
+    opts = {
+      auto_enable = false,
+
+      -- Leave integrations and encode empty here — we'll fill them in config
+      integrations = {},
+      symbols = {
+        scroll_line = "▶",
+        scroll_view = "┃",
       },
-      {
-        "<Leader>mr",
-        function() require("mini.map").refresh() end,
-        desc = "Refresh Mini Map",
+      window = {
+        side = "right",
+        focusable = false,
+        width = 12,
+        winblend = 30,
+        zindex = 10,
+        show_integration_count = true,
       },
     },
 
-    config = function()
-      local mini_map = require("mini.map")
+    config = function(_, opts)
+      local map = require("mini.map")
 
-      -- Safely generate integrations
+      -- Safe generation of integrations
       local integrations = {}
-      local ok, gen = pcall(mini_map.gen_integration)
+      local ok, gen = pcall(map.gen_integration)
       if ok and gen then
         table.insert(integrations, gen.builtin_search())
         table.insert(integrations, gen.gitsigns())
         table.insert(integrations, gen.diagnostic())
+        -- table.insert(integrations, gen.wrap())  -- optional: shows wrapped lines
       end
+      opts.integrations = integrations
 
-      mini_map.setup({
-        auto_enable = false,
+      -- Generate encoding symbols **now** that we have required the module
+      -- opts.symbols.encode = map.gen_encode_symbols.square("4x2")  -- or .dot("4x2")
 
-        integrations = integrations,
+      -- Optional: nicer symbols (popular in 2025+ configs)
+      -- opts.symbols.scroll_line = "━"
+      -- opts.symbols.scroll_view = "▌"
 
-        symbols = {
-          encode = mini_map.gen_encode_symbols.dot("4x2"),
-          scroll_line = "▶",    -- Indicates cursor line
-          scroll_view = "┃",    -- Indicates visible viewport
-        },
-
-        window = {
-          side = "right",
-          focusable = false,
-          width = 12,
-          winblend = 30,
-          zindex = 10,
-          show_integration_count = true,
-        },
-      })
+      map.setup(opts)
     end,
   },
 }

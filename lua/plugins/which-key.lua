@@ -1,129 +1,122 @@
 return {
   "folke/which-key.nvim",
   event = "VeryLazy",
-  init = function()
-    vim.o.timeout = true
-    vim.o.timeoutlen = 300
-  end,
-  config = function()
-    local wk = require("which-key")
-    
-    wk.setup({
-      preset = "modern", -- Use modern preset for better defaults
-      
-      win = {
-        border = "rounded", -- More modern look
-        padding = { 1, 2 }, -- Simplified padding [top/bottom, left/right]
-        title = true,
-        title_pos = "center",
-        zindex = 1000,
-        -- Add some styling
-        wo = {
-          winblend = 10, -- Slight transparency
-        },
+  opts = {
+    preset = "modern",
+    delay = function(ctx)
+      return ctx.mapping and 200 or 600   -- faster for known mappings
+    end,
+    win = {
+      border = "rounded",
+      no_overlap = true,
+      padding = { 1, 2 },
+      title = true,
+      title_pos = "center",
+      zindex = 1000,
+      wo = {
+        winblend = 10,
       },
-      
-      layout = {
-        width = { min = 20, max = 50 },
-        height = { min = 4, max = 25 },
-        spacing = 3,
-        align = "left",
+    },
+    layout = {
+      width = { min = 20, max = 50 },
+      height = { min = 6, max = 25 },
+      spacing = 4,
+      align = "left",
+    },
+    sort = { "case", "local", "order", "group", "alphanum", "mod" },
+    icons = {
+      breadcrumb = "»",
+      separator = "➜",
+      group = "+",
+      ellipsis = "…",
+      mappings = true,
+      rules = false,
+    },
+    show_help = true,
+    show_keys = true,
+    disable = {
+      filetypes = { "TelescopePrompt", "neo-tree", "lazy" },
+    },
+    -- Automatically label many popular plugins
+    plugins = {
+      marks = true,
+      registers = true,
+      spelling = { enabled = true, suggestions = 20 },
+      presets = {
+        operators = true,
+        motions = true,
+        text_objects = true,
+        windows = true,
+        nav = true,
+        z = true,
+        g = true,
       },
-      
-      -- Enhanced filtering and sorting
-      sort = { "local", "order", "group", "alphanum", "mod" },
-      expand = 1, -- Expand groups when <= 1
-      
-      -- Better replacement rules for cleaner display
-      replace = {
-        ["<space>"] = "SPC",
-        ["<cr>"] = "RET",
-        ["<tab>"] = "TAB",
-      },
-      
-      -- Icon configuration
-      icons = {
-        breadcrumb = "»", -- symbol used in the command line area that shows your active key combo
-        separator = "➜", -- symbol used between a key and it's label
-        group = "+", -- symbol prepended to a group
-        ellipsis = "…",
-        -- Set to false to disable all mapping icons (both keys and groups)
-        mappings = true,
-        -- Additional customizations
-        rules = false, -- Disable default icon rules to avoid conflicts
-      },
-      
-      -- Key display options
-      keys = {
-        scroll_down = "<c-d>", -- binding to scroll down inside the popup
-        scroll_up = "<c-u>", -- binding to scroll up inside the popup
-      },
-      
-      -- Disable for certain modes/operators
-      disable = {
-        buftypes = {},
-        filetypes = {},
-      },
-      
-      -- Debugging options (can be removed in production)
-      debug = false,
-      
-      -- Triggers
-      triggers = {
-        { "<auto>", mode = "nxsot" },
-      },
-    })
+    },
+    -- Replace <leader> etc in display
+    replace = {
+      ["<leader>"] = "SPC",
+      ["<space>"] = "SPC",
+      ["<cr>"] = "RET",
+      ["<tab>"] = "TAB",
+      ["<C-"] = "Ctrl+",
+    },
+  },
 
-    -- Define key group labels for better organization
+  config = function(_, opts)
+    local wk = require("which-key")
+    wk.setup(opts)
+
+    -- ── Main <leader> groups ───────────────────────────────────────
     wk.add({
-      -- Leader key groups
+      -- Core
       { "<leader>b", group = "󰓩 Buffers" },
-      { "<leader>c", group = "󰘦 Code" },
+      { "<leader>c", group = "󰘦 Code / LSP" },
       { "<leader>d", group = "󰃤 Debug" },
-      { "<leader>f", group = "󰈞 Find" },
+      { "<leader>f", group = "󰈞 Find / Telescope" },
       { "<leader>g", group = "󰊢 Git" },
       { "<leader>l", group = "󰗊 LSP" },
-      { "<leader>n", group = "󰎄 Navigation" },
-      { "<leader>p", group = "󰏖 Package Manager" },
-      { "<leader>q", group = "󰗼 Quit/Session" },
-      { "<leader>r", group = "󰑕 Replace" },
+      { "<leader>p", group = "󰏖 Plugins / Lazy" },
+      { "<leader>q", group = "󰗼 Quit / Session" },
+      { "<leader>r", group = "󰑕 Replace / Refactor" },
       { "<leader>s", group = "󰛔 Search" },
-      { "<leader>t", group = "󰙅 Toggle/Terminal" },
-      { "<leader>u", group = "󰔃 UI" },
+      { "<leader>t", group = "󰙅 Toggle / Terminal" },
+      { "<leader>u", group = "󰔃 UI / UX" },
       { "<leader>w", group = "󰖲 Windows" },
-      { "<leader>x", group = "󰒅 Trouble/Diagnostics" },
-      
-      -- Bracket-based groups (commonly used)
+      { "<leader>x", group = "󰒅 Diagnostics / Trouble" },
+
+      -- Navigation / motion groups
       { "]", group = "Next" },
       { "[", group = "Prev" },
-      
-      -- Visual mode groups
+      { "g",  group = "Goto" },
+      { "z",  group = "Fold / Zentering" },
+
+      -- Visual mode root
       { "<leader>", group = "Leader", mode = "v" },
-      { "g", group = "Go to", mode = { "n", "v" } },
-      
-      -- Common single-key actions with descriptions
-      { "z", group = "Fold" },
-      { "g", group = "Go to" },
-      
-      -- Plugin-specific groups (uncomment as needed)
-      -- { "<leader>gh", group = "󰊢 GitHub" }, -- for GitHub CLI or similar
-      -- { "<leader>m", group = "󰍉 Markdown" }, -- for markdown tools
-      -- { "<leader>v", group = "󰦨 Vimspector" }, -- for debugging
     })
 
-    -- Optional: Add some common keymaps with descriptions
-    -- These serve as examples - adjust to your actual keymaps
+    -- ── Example concrete mappings (replace with your real ones) ─────
     wk.add({
-      { "<leader>e", "<cmd>NvimTreeToggle<cr>", desc = "Explorer" },
-      { "<leader>w", "<cmd>w!<cr>", desc = "Save" },
-      { "<leader>q", "<cmd>confirm q<cr>", desc = "Quit" },
-      { "<leader>/", "<cmd>lua require('Comment.api').toggle.linewise.current()<cr>", desc = "Comment" },
-      { "<leader>h", "<cmd>nohlsearch<cr>", desc = "Clear Highlights" },
-    }, { mode = "n" })
+      -- File / Buffer
+      { "<leader>e", "<cmd>NvimTreeToggle<CR>",      desc = "File Explorer" },
+      { "<leader>w", "<cmd>update<CR>",              desc = "Save" },
+      { "<leader>W", "<cmd>wa<CR>",                  desc = "Save All" },
+      { "<leader>q", "<cmd>confirm q<CR>",           desc = "Quit" },
+      { "<leader>Q", "<cmd>confirm qa<CR>",          desc = "Quit All" },
 
-    -- Visual mode mappings
-    wk.add({
-      { "<leader>/", "<esc><cmd>lua require('Comment.api').toggle.linewise(vim.fn.visualmode())<cr>", desc = "Comment" },
-    }, { mode = "v" })
+      -- Common actions
+      { "<leader>/", function() require("Comment.api").toggle.linewise.current() end, desc = "Comment Line", mode = "n" },
+      { "<leader>/", function() require("Comment.api").toggle.linewise(vim.fn.visualmode()) end, desc = "Comment", mode = "v" },
+      { "<leader>h", "<cmd>nohlsearch<CR>",          desc = "Clear Search Highlights" },
+
+      -- Telescope / Find (examples)
+      { "<leader>ff", "<cmd>Telescope find_files<CR>",   desc = "Find Files" },
+      { "<leader>fg", "<cmd>Telescope live_grep<CR>",    desc = "Live Grep" },
+      { "<leader>fb", "<cmd>Telescope buffers<CR>",      desc = "Buffers" },
+
+      -- LSP (examples – adjust to your actual keys)
+      { "<leader>ca", vim.lsp.buf.code_action,           desc = "Code Action", mode = { "n", "v" } },
+      { "<leader>rn", vim.lsp.buf.rename,                desc = "Rename" },
+      { "<leader>gd", vim.lsp.buf.definition,            desc = "Goto Definition" },
+    })
   end,
 }

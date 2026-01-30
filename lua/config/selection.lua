@@ -1,141 +1,271 @@
-local ts_utils = require("nvim-treesitter.ts_utils")
-
+-- ts_select/init.lua
+-- Incremental Treesitter selection (expand/contract) with Windows-safe cursor ops
 local M = {}
-
--- ─── State ────────────────────────────────────────────────────────────────
+-- ── Internal state ─────────────────────────────────────────────────────────
 local state = {
-  node_stack = {},
-  current_index = 0,
-  initial_cursor = nil,
+  stack = {}, -- array of nodes (inner -> outer)
+  idx = 0, -- current index in stack (0 == inactive)
+  initial_cursor = nil, -- {row, col} 1-indexed
 }
+local is_windows = vim.fn.has('win32') == 1 or vim.fn.has('win64') == 1
+-- ── Utils: Treesitter access (0.10+ first, then fallbacks) ─────────────────
+local function has_parser(bufnr)
+  bufnr = bufnr or 0
+  local ok, parser = pcall(vim.treesitter.get_parser, bufnr)
+  return ok and parser ~= nil
+end
 
--- ─── Visual Selection ─────────────────────────────────────────────────────
-local function set_visual_selection(node)
-  if not node then return false end
-  local start_row, start_col, end_row, end_col = node:range()
+local function node_at_cursor(bufnr)
+  bufnr = bufnr or 0
+  -- Neovim 0.10+: vim.treesitter.get_node({buf=..., pos=...})
+  if vim.treesitter.get_node then
+    local row, col = unpack(vim.api.nvim_win_get_cursor(0)) -- 1-indexed
+    -- get_node expects 0-indexed row/col (byte col)
+    return vim.treesitter.get_node({ bufnr = bufnr, pos = { row - 1, col } })
+  end
+  -- Fallback: try ts_utils for 0.9 users if installed
+  local ok, ts_utils = pcall(require, 'nvim-treesitter.ts_utils')
+  if ok and ts_utils and ts_utils.get_node_at_cursor then
+    return ts_utils.get_node_at_cursor()
+  end
+  return nil
+end
 
-  -- Store initial cursor position only once
+-- ── Utils: ranges & deduplication ──────────────────────────────────────────
+local function node_range_tbl(node)
+  local sr, sc, er, ec = node:range() -- note: ec is exclusive
+  return { sr, sc, er, ec }
+end
+
+local function ranges_equal(a, b)
+  return a[1] == b[1] and a[2] == b[2] and a[3] == b[3] and a[4] == b[4]
+end
+
+local function parent_nonredundant(n)
+  local p = n and n:parent()
+  if not p then return nil end
+  local r1 = node_range_tbl(n)
+  local r2 = node_range_tbl(p)
+  if ranges_equal(r1, r2) then
+    return parent_nonredundant(p)
+  end
+  return p
+end
+
+-- ── Visual selection helper ────────────────────────────────────────────────
+-- Treesitter end_col is exclusive; nvim_win_set_cursor expects byte col (inclusive).
+local function to_inclusive_end(er, ec)
+  if ec > 0 then
+    return er, ec - 1
+  end
+  -- empty node at col 0 -> keep as 0
+  return er, ec
+end
+
+local function set_visual_from_range(sr, sc, er, ec)
+  -- Save initial cursor only once
   if not state.initial_cursor then
-    state.initial_cursor = vim.api.nvim_win_get_cursor(0)
+    state.initial_cursor = vim.api.nvim_win_get_cursor(0) -- {row,col}, 1-indexed
+  end
+  -- Leave any visual mode to avoid weirdness
+  vim.cmd('normal! \27')
+  -- Compute inclusive end
+  local ier, iec = to_inclusive_end(er, ec)
+  -- Choose charwise or linewise:
+  -- If node spans multiple lines fully, linewise feels nicer; otherwise charwise.
+  local multiline = (sr ~= er)
+  local mode = multiline and 'V' or 'v'
+
+  local function apply()
+    -- Start point
+    pcall(vim.api.nvim_win_set_cursor, 0, { sr + 1, sc })
+    vim.cmd('normal! ' .. mode)
+    -- End point
+    pcall(vim.api.nvim_win_set_cursor, 0, { ier + 1, iec })
   end
 
-  vim.fn.setpos(".", { 0, start_row + 1, start_col + 1, 0 })
-  vim.cmd("normal! v")
-  vim.fn.setpos(".", { 0, end_row + 1, end_col, 0 })
+  if is_windows then
+    -- Cursor updates on Windows are more reliable when scheduled
+    vim.schedule(apply)
+  else
+    apply()
+  end
   return true
 end
 
--- ─── Parent Traversal ─────────────────────────────────────────────────────
-local function find_expandable_parent(node)
-  local parent = node and node:parent()
-  if not parent then return nil end
-
-  local sr1, sc1, er1, ec1 = node:range()
-  local sr2, sc2, er2, ec2 = parent:range()
-
-  if sr1 == sr2 and sc1 == sc2 and er1 == er2 and ec1 == ec2 then
-    return find_expandable_parent(parent) -- Skip redundant nodes
-  end
-  return parent
+local function select_node(node)
+  if not node then return false end
+  local sr, sc, er, ec = node:range()
+  return set_visual_from_range(sr, sc, er, ec)
 end
 
--- ─── Selection API ────────────────────────────────────────────────────────
+-- ── Stack helpers ─────────────────────────────────────────────────────────
+local function reset_state()
+  state.stack = {}
+  state.idx = 0
+  if state.initial_cursor then
+    -- Try direct set_cursor, then fallback via setpos
+    local ok = pcall(vim.api.nvim_win_set_cursor, 0, state.initial_cursor)
+    if not ok then
+      vim.fn.setpos('.', { 0, state.initial_cursor[1], state.initial_cursor[2], 0 })
+    end
+    state.initial_cursor = nil
+  end
+  -- Exit visual mode if active
+  local m = vim.api.nvim_get_mode().mode
+  if m:match('^[vV\22]') then
+    vim.cmd('normal! \27')
+  end
+end
+
+local function valid_active()
+  return state.idx > 0 and state.idx <= #state.stack and state.stack[state.idx]
+end
+
+-- ── Public API ─────────────────────────────────────────────────────────────
 function M.start_selection()
-  local node = ts_utils.get_node_at_cursor()
+  if not has_parser(0) then
+    vim.notify_once('Treesitter parser not available for this buffer', vim.log.levels.WARN)
+    return false
+  end
+  local node = node_at_cursor(0)
   if not node then
-    vim.notify_once("No Treesitter node at cursor", vim.log.levels.WARN)
+    vim.notify_once('No Treesitter node at cursor', vim.log.levels.WARN)
     return false
   end
-
-  state.node_stack = { node }
-  state.current_index = 1
+  state.stack = { node }
+  state.idx = 1
   state.initial_cursor = nil
-
-  if not set_visual_selection(node) then
-    vim.notify("Failed to set initial selection", vim.log.levels.ERROR)
+  if not select_node(node) then
+    vim.notify('Failed to set initial selection', vim.log.levels.ERROR)
+    reset_state()
     return false
   end
-
   return true
 end
 
 function M.expand_selection()
-  if state.current_index == 0 then
-    vim.notify_once("No active selection. Use `start_selection()` first.", vim.log.levels.WARN)
+  if state.idx == 0 then
+    -- allow smart expand (start if inactive)
+    return M.start_selection()
+  end
+  if not valid_active() then
+    vim.notify('Invalid selection state. Resetting.', vim.log.levels.WARN)
+    reset_state()
     return false
   end
-
-  local current_node = state.node_stack[state.current_index]
-      or ts_utils.get_node_at_cursor()
-
-  if not current_node then
-    vim.notify("No node found to expand", vim.log.levels.WARN)
-    return false
-  end
-
-  local parent = find_expandable_parent(current_node)
+  local cur = state.stack[state.idx]
+  local parent = parent_nonredundant(cur)
   if not parent then
-    vim.notify_once("No parent node to expand to", vim.log.levels.INFO)
-    vim.cmd("normal! gv")
+    -- Nothing to expand to; keep current visual selection
+    vim.notify_once('No parent node to expand to', vim.log.levels.INFO)
+    pcall(vim.cmd, 'normal! gv')
     return false
   end
-
-  table.insert(state.node_stack, parent)
-  state.current_index = state.current_index + 1
-
-  if not set_visual_selection(parent) then
-    table.remove(state.node_stack)
-    state.current_index = state.current_index - 1
-    vim.notify("Failed to expand selection", vim.log.levels.ERROR)
+  -- Avoid pushing exact duplicate ranges
+  local pr = node_range_tbl(parent)
+  local last = state.stack[#state.stack]
+  if last and ranges_equal(pr, node_range_tbl(last)) then
+    -- Skip duplicate
+    parent = parent_nonredundant(parent)
+    if not parent then
+      vim.notify_once('No parent node to expand to', vim.log.levels.INFO)
+      return false
+    end
+    pr = node_range_tbl(parent)
+  end
+  table.insert(state.stack, parent)
+  state.idx = state.idx + 1
+  if not select_node(parent) then
+    table.remove(state.stack)
+    state.idx = state.idx - 1
+    vim.notify('Failed to expand selection', vim.log.levels.ERROR)
     return false
   end
-
   return true
 end
 
 function M.contract_selection()
-  if state.current_index <= 1 then
-    vim.notify_once("Already at the innermost selection", vim.log.levels.INFO)
+  if state.idx <= 1 then
+    vim.notify_once('Already at the innermost selection', vim.log.levels.INFO)
     return false
   end
-
-  state.current_index = state.current_index - 1
-  local node = state.node_stack[state.current_index]
-
-  if not node or not set_visual_selection(node) then
-    vim.notify("Failed to contract selection", vim.log.levels.ERROR)
+  state.idx = state.idx - 1
+  local node = state.stack[state.idx]
+  if not node or not select_node(node) then
+    vim.notify('Failed to contract selection', vim.log.levels.ERROR)
+    state.idx = state.idx + 1
     return false
   end
-
   return true
 end
 
 function M.reset_selection()
-  state.node_stack = {}
-  state.current_index = 0
-
-  if state.initial_cursor then
-    vim.api.nvim_win_set_cursor(0, state.initial_cursor)
-    state.initial_cursor = nil
-  end
-end
-
-function M.get_selection_info()
-  local node = state.node_stack[state.current_index]
-  return {
-    active = state.current_index > 0,
-    depth = state.current_index,
-    total = #state.node_stack,
-    node_type = node and node:type() or nil,
-  }
+  reset_state()
+  return true
 end
 
 function M.smart_select()
-  if state.current_index == 0 then
+  if state.idx == 0 then
     return M.start_selection()
   else
     return M.expand_selection()
   end
+end
+
+function M.get_selection_info()
+  local node = valid_active() and state.stack[state.idx] or nil
+  return {
+    active = state.idx > 0,
+    depth = state.idx,
+    total = #state.stack,
+    node_type = node and node:type() or nil,
+    has_parser = has_parser(0),
+    platform = is_windows and 'windows' or 'unix',
+  }
+end
+
+function M.debug_info()
+  local info = M.get_selection_info()
+  local cursor = vim.api.nvim_win_get_cursor(0)
+  local mode = vim.api.nvim_get_mode()
+  print('=== Treesitter Selection Debug ===')
+  print('Platform: ' .. info.platform)
+  print('Parser available: ' .. tostring(info.has_parser))
+  print('Selection active: ' .. tostring(info.active))
+  print('Depth: ' .. info.depth .. ' / ' .. info.total)
+  print('Node type: ' .. (info.node_type or 'none'))
+  print('Mode: ' .. mode.mode)
+  print(('Cursor: [%d, %d]'):format(cursor[1], cursor[2]))
+  if state.initial_cursor then
+    print(('Initial cursor: [%d, %d]'):format(state.initial_cursor[1], state.initial_cursor[2]))
+  end
+end
+
+-- ── Setup with optional keymaps ────────────────────────────────────────────
+function M.setup(opts)
+  opts = opts or {}
+  if not has_parser(0) then
+    vim.notify_once('nvim-treesitter parser not available in this buffer (yet). The module will activate automatically once a parser attaches.', vim.log.levels.INFO)
+  end
+  if opts.keymaps then
+    local map = function(lhs, fn, desc, mode)
+      mode = mode or { 'n', 'v' }
+      vim.keymap.set(mode, lhs, fn, { desc = desc, silent = true })
+    end
+    if opts.keymaps.start then map(opts.keymaps.start, M.start_selection, 'TS Select: start', { 'n' }) end
+    if opts.keymaps.expand then map(opts.keymaps.expand, M.expand_selection, 'TS Select: expand', { 'x', 's' }) end
+    if opts.keymaps.contract then map(opts.keymaps.contract, M.contract_selection, 'TS Select: contract', { 'x', 's' }) end
+    if opts.keymaps.reset then map(opts.keymaps.reset, M.reset_selection, 'TS Select: reset', { 'n', 'v' }) end
+    if opts.keymaps.smart then map(opts.keymaps.smart, M.smart_select, 'TS Select: smart', { 'n', 'v' }) end
+    if opts.keymaps.debug then map(opts.keymaps.debug, M.debug_info, 'TS Select: debug', { 'n' }) end
+  end
+  -- Reset on buffer switch/close
+  vim.api.nvim_create_autocmd({ 'BufLeave', 'BufDelete' }, {
+    callback = function() M.reset_selection() end,
+    desc = 'Reset TS incremental selection on buffer change',
+  })
+  return true
 end
 
 return M

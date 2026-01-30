@@ -1,15 +1,15 @@
 return {
-  -- Optional: Inline LaTeX math rendering
+  -- Optional: inline LaTeX math rendering (works in markdown buffers)
   "jbyuki/nabla.nvim",
 
   {
     "MeanderingProgrammer/render-markdown.nvim",
-    event = { "BufReadPost *.md", "BufNewFile *.md" },
+    ft = { "markdown" },
     cmd = { "RenderMarkdown", "RenderMarkdownToggle" },
 
     dependencies = {
       "nvim-treesitter/nvim-treesitter",
-      -- "echasnovski/mini.nvim", -- Optional: styling helper
+      -- "echasnovski/mini.nvim", -- Optional styling helper
       -- {
       --   "iamcco/markdown-preview.nvim",
       --   build = function() vim.fn["mkdp#util#install"]() end,
@@ -23,7 +23,9 @@ return {
 
     opts = {
       default = {
-        enable_on_load = true,
+        -- IMPORTANT: don't auto-enable for all markdown, since jupytext/quarto notebook markdown
+        -- should behave like "code" buffers for Molten, not like prose docs.
+        enable_on_load = false,
         realtime = true,
       },
       appearance = {
@@ -47,7 +49,12 @@ return {
           text = "#FFFFFF",
           background = "#1E1E2E",
           headlines = {
-            "#F38BA8", "#FAB387", "#F9E2AF", "#A6E3A1", "#89B4FA", "#CBA6F7",
+            "#F38BA8",
+            "#FAB387",
+            "#F9E2AF",
+            "#A6E3A1",
+            "#89B4FA",
+            "#CBA6F7",
           },
         },
       },
@@ -71,10 +78,41 @@ return {
 
       md.setup(opts or {})
 
-      -- Markdown-specific buffer options
+      -- Detect jupytext/quarto notebook markdown buffers (YAML frontmatter w/ jupytext/jupyter keys)
+      local function is_jupytext_notebook(bufnr)
+        local line_count = vim.api.nvim_buf_line_count(bufnr)
+        local n = math.min(160, line_count)
+        if n <= 0 then return false end
+
+        local lines = vim.api.nvim_buf_get_lines(bufnr, 0, n, false)
+        if #lines == 0 then return false end
+
+        -- Must start with YAML frontmatter
+        if not (lines[1] or ""):match("^%s*%-%-%-%s*$") then
+          return false
+        end
+
+        local text = table.concat(lines, "\n")
+        -- jupytext frontmatter often includes either top-level `jupytext:` or `jupyter:`
+        if text:match("\njupytext:%s*\n") or text:match("\njupyter:%s*\n") then
+          return true
+        end
+        return false
+      end
+
+      -- Markdown-specific buffer options — but SKIP jupytext notebook markdown
       vim.api.nvim_create_autocmd("FileType", {
+        group = vim.api.nvim_create_augroup("RenderMarkdownBufferOpts", { clear = true }),
         pattern = "markdown",
-        callback = function()
+        callback = function(ev)
+          if is_jupytext_notebook(ev.buf) then
+            -- Notebook markdown should behave like a code buffer for Molten; don't force prose UX.
+            -- You can still toggle preview manually with <leader>mp.
+            vim.opt_local.spell = false
+            vim.opt_local.conceallevel = 0
+            return
+          end
+
           local set = vim.opt_local
           set.spell = true
           set.spelllang = "en_us"
@@ -82,9 +120,10 @@ return {
           set.conceallevel = 2
           set.wrap = true
           set.linebreak = true
-          vim.keymap.set("n", "j", "gj", { buffer = true })
-          vim.keymap.set("n", "k", "gk", { buffer = true })
+          vim.keymap.set("n", "j", "gj", { buffer = ev.buf })
+          vim.keymap.set("n", "k", "gk", { buffer = ev.buf })
         end,
+        desc = "Markdown buffer UX (skip jupytext notebook markdown)",
       })
 
       -- Dynamic headline highlights
