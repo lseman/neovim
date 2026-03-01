@@ -316,7 +316,7 @@ function M.setup(opts)
             vim.keymap.set("n", "<leader>rl", M.run_line, opts)
             vim.keymap.set("v", "<leader>rs", M.run_selection, opts)
             vim.keymap.set("n", "<leader>ri", M.run_interactive, opts)
-            vim.keymap.set("n", "<leader>rr", M.repeat_last, opts)
+            -- vim.keymap.set("n", "<leader>rr", M.repeat_last, opts)
             vim.keymap.set("n", "<leader>rh", M.run_from_history, opts)
         end
     })

@@ -1,0 +1,12 @@
+--  return {
+--     "GCBallesteros/NotebookNavigator.nvim",
+--     dependencies = { "GCBallesteros/jupytext.nvim", "GCBallesteros/molten-nvim" },
+--     opts = {},
+--     keys = {
+--       { "]c", function() require("notebook-navigator").move_cell("down") end, desc = "Next cell" },
+--       { "[c", function() require("notebook-navigator").move_cell("up") end, desc = "Prev cell" },
+--       { "<leader>jj", function() require("notebook-navigator").run_cell() end, desc = "Run cell" },
+--       { "<leader>jJ", function() require("notebook-navigator").run_and_move() end, desc = "Run cell + next" },
+--     },
+--   }
+return {}

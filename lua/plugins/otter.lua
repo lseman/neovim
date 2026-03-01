@@ -2,16 +2,16 @@ return {
   "jmbuhr/otter.nvim",
   dependencies = {
     "nvim-treesitter/nvim-treesitter",
-    -- Optional but strongly recommended:
-    { "hrsh7th/nvim-cmp", optional = true },           -- for completions inside code blocks
-    { "neovim/nvim-lspconfig", optional = true },      -- for LSP diagnostics & go-to-definition
+
+    -- Optional but very useful:
+    { "hrsh7th/nvim-cmp",      optional = true }, -- completions inside code blocks
+    { "neovim/nvim-lspconfig", optional = true }, -- LSP features in injected code
   },
 
-  opts = {
-    -- Which languages should be treated as code blocks inside markdown/quarto
-    handle_leading_whitespace = true,
+  ft = { "markdown", "quarto", "rmd", "qmd" },  -- lazy-load only for these filetypes
 
-    -- Which languages otter should look for
+  opts = {
+    -- Which languages otter should recognize inside fenced code blocks
     languages = {
       "python",
       "lua",
@@ -26,48 +26,74 @@ return {
       "sh",
       "r",
       "julia",
-      -- add more as needed
+      -- "latex", "html", "css", "json", ... → add as needed
     },
 
-    -- Controls when otter activates
+    -- Behavior tweaks
+    handle_leading_whitespace = true,
     strip_wrapping_quote_characters = { "'", '"', "`" },
-
-    -- Whether to remove extra blank lines inside code blocks
     remove_extra_blank_lines = true,
 
-    -- Debug level (set to true during setup if things don't work)
+    -- Performance / debug
     debug = false,
   },
 
   config = function(_, opts)
-    require("otter").activate(opts.languages, true, true)  -- auto-activate + treesitter injections
+    local otter = require("otter")
 
-    -- Optional: keymaps (very useful in practice)
-    vim.keymap.set("n", "<leader>oo", function()
-      require("otter").activate()
+    -- Activate otter with your preferred settings
+    otter.activate(opts.languages, true, true)  -- true = auto-activate, true = treesitter injections
+
+    -- ── Useful keymaps ───────────────────────────────────────────────────────
+    local map = vim.keymap.set
+    local opts_key = { noremap = true, silent = true }
+
+    map("n", "<leader>oo", function()
+      otter.activate()
       vim.notify("Otter activated", vim.log.levels.INFO)
-    end, { desc = "Activate Otter" })
+    end, vim.tbl_extend("force", opts_key, { desc = "Otter: Activate" }))
 
-    vim.keymap.set("n", "<leader>od", function()
-      require("otter").deactivate()
+    map("n", "<leader>od", function()
+      otter.deactivate()
       vim.notify("Otter deactivated", vim.log.levels.INFO)
-    end, { desc = "Deactivate Otter" })
+    end, vim.tbl_extend("force", opts_key, { desc = "Otter: Deactivate" }))
 
-    vim.keymap.set("n", "<leader>or", function()
-      require("otter").activate()
-      require("otter").sync_raft()
-      vim.notify("Otter synced", vim.log.levels.INFO)
-    end, { desc = "Refresh Otter" })
+    map("n", "<leader>or", function()
+      otter.activate()
+      otter.sync_raft()
+      vim.notify("Otter refreshed", vim.log.levels.INFO)
+    end, vim.tbl_extend("force", opts_key, { desc = "Otter: Refresh / Sync" }))
 
-    -- Optional: auto-activate in markdown/quarto files
+    -- Debug toggle (handy when troubleshooting)
+    map("n", "<leader>odbg", function()
+      opts.debug = not opts.debug
+      otter.activate(opts.languages, true, true)
+      vim.notify("Otter debug: " .. (opts.debug and "ON" or "OFF"), vim.log.levels.INFO)
+    end, vim.tbl_extend("force", opts_key, { desc = "Otter: Toggle Debug" }))
+
+    -- ── Auto-activate on relevant filetypes ─────────────────────────────────
     vim.api.nvim_create_autocmd("FileType", {
-      pattern = { "markdown", "quarto", "rmd" },
+      pattern = { "markdown", "quarto", "rmd", "qmd" },
+      group = vim.api.nvim_create_augroup("OtterAutoActivate", { clear = true }),
       callback = function()
         vim.defer_fn(function()
-          if vim.bo.filetype == "markdown" or vim.bo.filetype == "quarto" then
-            require("otter").activate()
+          -- Only activate if buffer is still valid and filetype matches
+          if vim.api.nvim_buf_is_valid(0) and
+             vim.bo.filetype:match("markdown|quarto|rmd|qmd") then
+            otter.activate(opts.languages, true, true)
           end
-        end, 100)
+        end, 80)  -- small delay to let treesitter settle
+      end,
+    })
+
+    -- ── Keep otter in sync when writing / changing text ─────────────────────
+    vim.api.nvim_create_autocmd({ "BufWritePost", "TextChanged", "TextChangedI" }, {
+      pattern = { "*.md", "*.qmd", "*.rmd", "*.quarto" },
+      group = vim.api.nvim_create_augroup("OtterAutoSync", { clear = true }),
+      callback = function()
+        if otter.is_active() then
+          vim.defer_fn(otter.sync_raft, 150)
+        end
       end,
     })
   end,

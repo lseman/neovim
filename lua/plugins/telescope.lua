@@ -1,138 +1,163 @@
 return {
-  "nvim-telescope/telescope.nvim",
---   tag = "0.1.8",  -- pin to stable if you prefer; or remove for latest
-  dependencies = {
-    "nvim-lua/plenary.nvim",
-    { "nvim-telescope/telescope-fzf-native.nvim", build = "make" },
-    "nvim-telescope/telescope-ui-select.nvim",
-    -- Recommended addition: frecency for intelligent recent files
-    "nvim-telescope/telescope-frecency.nvim",
-    -- Optional: if you use dap later → uncomment
-    -- "nvim-telescope/telescope-dap.nvim",
-  },
+    "nvim-telescope/telescope.nvim",
+    tag = "0.1.8", -- still very stable in 2026; remove if you want bleeding edge
+    -- branch = "0.1.x",     -- alternative if you prefer minor updates
 
-  keys = {
-    { "<leader>ff", function() require("telescope.builtin").find_files() end, desc = "Find Files" },
-    { "<leader>fg", function() require("telescope.builtin").live_grep() end,  desc = "Live Grep" },
-    { "<leader>fb", function() require("telescope.builtin").buffers() end,    desc = "Buffers" },
-    { "<leader>fh", function() require("telescope.builtin").help_tags() end, desc = "Help Tags" },
-    { "<leader>fr", function() require("telescope.builtin").oldfiles() end,  desc = "Recent Files" },
-    { "<leader>fc", function() require("telescope.builtin").command_history() end, desc = "Command History" },
-    { "<leader>fd", function() require("telescope.builtin").diagnostics() end,     desc = "Diagnostics" },
-    -- Smart git-aware files
-    { "<leader>fF", function()
-      local ok = pcall(require("telescope.builtin").git_files)
-      if not ok then require("telescope.builtin").find_files() end
-    end, desc = "Git Files (or fallback)" },
-    -- Frecency (if added)
-    { "<leader>sf", "<cmd>Telescope frecency workspace=CWD<CR>", desc = "Frecency (CWD)" },
-  },
+    dependencies = {"nvim-lua/plenary.nvim", {
+        "nvim-telescope/telescope-fzf-native.nvim",
+        build = "make"
+    }, "nvim-telescope/telescope-ui-select.nvim", -- Most popular frecency implementation right now
+    "nvim-telescope/telescope-frecency.nvim", -- Very useful extensions (uncomment what you like)
+    "debugloop/telescope-undo.nvim" -- <leader>fu → undo tree
+    -- "nvim-telescope/telescope-live-grep-args.nvim",  -- dynamic rg flags
+    -- "danielfalk/smart-open.nvim",              -- smart frecency + recency + cwd bias
+    },
 
-  config = function()
-    local telescope = require("telescope")
-    local actions = require("telescope.actions")
-    local themes = require("telescope.themes")
+    keys = { -- Telescope-only extras (Snacks handles core picker maps)
+    {
+        "<leader>sf",
+        "<cmd>Telescope frecency workspace=CWD<CR>",
+        desc = "Frecency (CWD)"
+    }, {
+        "<leader>sF",
+        "<cmd>Telescope frecency workspace=global<CR>",
+        desc = "Frecency (Global)"
+    }, {
+        "<leader>sc",
+        "<cmd>Telescope command_history<CR>",
+        desc = "Command History"
+    }, {
+        "<leader>fu",
+        "<cmd>Telescope undo<CR>",
+        desc = "Undo Tree"
+    } -- { "<leader>fG", "<cmd>Telescope live_grep_args<CR>", desc = "Live Grep (args)" },
+    },
 
-    telescope.setup({
-      defaults = {
-        prompt_prefix = "❯ ",
-        selection_caret = "➤ ",
-        entry_prefix = "  ",
-        multi_icon = "󰣉 ",  -- nicer multi-select icon
+    config = function()
+        local telescope = require("telescope")
+        local actions = require("telescope.actions")
+        local themes = require("telescope.themes")
 
-        path_display = { "filename_first", "truncate" },  -- modern: filename first
-        -- path_display = { "smart" }, -- alternative
+        telescope.setup({
+            defaults = {
+                prompt_prefix = "   ",
+                selection_caret = "➤ ",
+                entry_prefix = "  ",
+                multi_icon = "󰣉 ",
+                path_display = {"filename_first", "truncate"}, -- very popular in 2025+
+                sorting_strategy = "ascending",
+                layout_strategy = "horizontal",
+                layout_config = {
+                    horizontal = {
+                        prompt_position = "top",
+                        preview_width = 0.58,
+                        results_width = 0.42
+                    },
+                    vertical = {
+                        mirror = false
+                    },
+                    width = function(_, max_cols)
+                        return math.min(150, math.floor(max_cols * 0.92))
+                    end,
+                    height = 0.88,
+                    preview_cutoff = 120 -- lower = more previews
+                },
 
-        sorting_strategy = "ascending",
-        layout_strategy = "horizontal",
-        layout_config = {
-          horizontal = {
-            prompt_position = "top",
-            preview_width = 0.60,       -- slightly wider preview
-            results_width = 0.40,
-          },
-          vertical = { mirror = false },
-          width = function(_, max_columns)
-            return math.min(140, math.floor(max_columns * 0.90))
-          end,
-          height = 0.85,
-          preview_cutoff = 200,         -- show preview for larger terminals
-        },
+                mappings = {
+                    i = {
+                        ["<C-j>"] = actions.move_selection_next,
+                        ["<C-k>"] = actions.move_selection_previous,
+                        ["<C-n>"] = actions.cycle_history_next,
+                        ["<C-p>"] = actions.cycle_history_prev,
+                        ["<esc>"] = actions.close, -- very common preference
+                        ["<C-c>"] = actions.close,
+                        ["<CR>"] = actions.select_default,
+                        ["<C-x>"] = actions.select_horizontal,
+                        ["<C-v>"] = actions.select_vertical,
+                        ["<C-t>"] = actions.select_tab,
+                        ["<C-u>"] = actions.preview_scrolling_up,
+                        ["<C-d>"] = actions.preview_scrolling_down,
+                        ["<C-q>"] = actions.send_to_qflist + actions.open_qflist,
+                        ["<M-q>"] = actions.send_selected_to_qflist + actions.open_qflist
+                    },
 
-        mappings = {
-          i = {
-            ["<C-j>"] = actions.move_selection_next,
-            ["<C-k>"] = actions.move_selection_previous,
-            ["<C-n>"] = actions.cycle_history_next,
-            ["<C-p>"] = actions.cycle_history_prev,
-            ["<C-c>"] = actions.close,
-            ["<CR>"] = actions.select_default,
-            ["<C-x>"] = actions.select_horizontal,
-            ["<C-v>"] = actions.select_vertical,
-            ["<C-t>"] = actions.select_tab,
-            ["<C-u>"] = actions.preview_scrolling_up,
-            ["<C-d>"] = actions.preview_scrolling_down,
-            ["<C-q>"] = actions.send_to_qflist + actions.open_qflist,  -- very useful
-            ["<C-s>"] = actions.send_selected_to_qflist + actions.open_qflist,
-          },
-          n = {
-            ["<esc>"] = actions.close,
-            ["q"] = actions.close,
-            ["j"] = actions.move_selection_next,
-            ["k"] = actions.move_selection_previous,
-            ["gg"] = actions.move_to_top,
-            ["G"] = actions.move_to_bottom,
-            ["<CR>"] = actions.select_default,
-            ["<C-q>"] = actions.send_to_qflist + actions.open_qflist,
-          },
-        },
+                    n = {
+                        ["q"] = actions.close,
+                        ["<esc>"] = actions.close,
+                        ["j"] = actions.move_selection_next,
+                        ["k"] = actions.move_selection_previous,
+                        ["gg"] = actions.move_to_top,
+                        ["G"] = actions.move_to_bottom,
+                        ["<CR>"] = actions.select_default,
+                        ["<C-q>"] = actions.send_to_qflist + actions.open_qflist
+                    }
+                }
 
-        -- Dynamic border / winblend if you like transparency
-        -- winblend = 10,
-      },
+                -- file_ignore_patterns = { "node_modules", "%.git/", "%.o", "%.a", "%.out", "%.class" },
+            },
 
-      pickers = {
-        -- Example: use ivy theme for buffers (cleaner for lists)
-        buffers = {
-          theme = "ivy",
-          sort_lastused = true,
-          previewer = false,
-          mappings = {
-            i = { ["<C-d>"] = actions.delete_buffer },
-          },
-        },
-        find_files = { hidden = true },  -- show dotfiles by default
-        live_grep = {
-          additional_args = function() return { "--hidden" } end,
-        },
-      },
+            pickers = {
+                buffers = {
+                    theme = "ivy",
+                    sort_mru = true,
+                    sort_lastused = true,
+                    previewer = false,
+                    mappings = {
+                        i = {
+                            ["<C-d>"] = actions.delete_buffer
+                        },
+                        n = {
+                            ["dd"] = actions.delete_buffer
+                        }
+                    }
+                },
 
-      extensions = {
-        fzf = {
-          fuzzy = true,
-          override_generic_sorter = true,
-          override_file_sorter = true,
-          case_mode = "smart_case",
-        },
-        ["ui-select"] = {
-          themes.get_dropdown({}),
-        },
-        frecency = {
-          show_scores = true,
-          show_filter_column = false,
-          matcher = "fuzzy",
-          workspace = "CWD",
-        },
-        -- dap = { theme = "dropdown" },  -- if using later
-      },
-    })
+                find_files = {
+                    hidden = true
+                    -- no_ignore = false,   -- toggle with :Telescope find_files no_ignore=true
+                },
 
-    -- Load extensions
-    telescope.load_extension("fzf")
-    telescope.load_extension("ui-select")
-    telescope.load_extension("frecency")
-    -- telescope.load_extension("dap")  -- when ready
+                live_grep = {
+                    additional_args = {"--hidden", "--glob=!.git/"}
+                },
 
-    -- Optional: vim.ui integration is already via ui-select
-  end,
+                oldfiles = {
+                    cwd_only = true
+                } -- many people prefer cwd-restricted recent files
+            },
+
+            extensions = {
+                fzf = {
+                    fuzzy = true,
+                    override_generic_sorter = true,
+                    override_file_sorter = true,
+                    case_mode = "smart_case"
+                },
+
+                ["ui-select"] = {themes.get_dropdown({}) -- nice compact look for code actions etc.
+                },
+
+                frecency = {
+                    show_scores = true,
+                    show_filter_column = false,
+                    matcher = "fuzzy",
+                    workspace = "CWD", -- default behavior
+                    db_root = vim.fn.stdpath("data") .. "/databases" -- explicit is safer
+                    -- frecency is quite good nowadays — most people keep default algo
+                },
+
+                undo = {
+                    side_by_side = true,
+                    layout_strategy = "vertical"
+                } -- if you add telescope-undo
+            }
+        })
+
+        -- Load everything
+        telescope.load_extension("fzf")
+        telescope.load_extension("ui-select")
+        telescope.load_extension("frecency")
+        -- telescope.load_extension("undo")             -- if added
+        -- telescope.load_extension("live_grep_args")   -- if added
+    end
 }

@@ -49,10 +49,10 @@ map("i", "<C-y>", "<C-o><C-r>", default_opts)
 
 -- ── 2. Navigation ───────────────────────────────────────────────────────
 
-map("n", "<C-h>", "<C-w>h", default_opts)
-map("n", "<C-j>", "<C-w>j", default_opts)
-map("n", "<C-k>", "<C-w>k", default_opts)
-map("n", "<C-l>", "<C-w>l", default_opts)
+-- map("n", "<C-h>", "<C-w>h", default_opts)
+-- map("n", "<C-j>", "<C-w>j", default_opts)
+-- map("n", "<C-k>", "<C-w>k", default_opts)
+-- map("n", "<C-l>", "<C-w>l", default_opts)
 
 map("n", "<C-Up>", "<cmd>resize +2<CR>", default_opts)
 map("n", "<C-Down>", "<cmd>resize -2<CR>", default_opts)
@@ -125,61 +125,85 @@ map({"n", "v", "i"}, "<C-a>", "<Esc>ggVG", vim.tbl_extend("force", default_opts,
 map("v", "<Tab>", ">gv", default_opts)
 map("v", "<S-Tab>", "<gv", default_opts)
 
--- ── 5. Search / Telescope ──────────────────────────────────────────────
+-- ── 5. Search / Picker (Snacks-first, Telescope fallback) ─────────────────
 
-local builtin = require("telescope.builtin")
+local function call_picker(snacks_name, telescope_name, telescope_opts)
+    return function()
+        local ok_snacks, snacks = pcall(require, "snacks")
+        if ok_snacks and snacks and snacks.picker and snacks.picker[snacks_name] then
+            snacks.picker[snacks_name]()
+            return
+        end
 
-map("n", ";", function()
-    local include = {"lua", "py", "ts", "tsx", "js", "jsx", "html", "css", "json", "md", "ipynb", "vhd", "Makefile"}
-    local exclude = {".git", "node_modules", ".venv", "__pycache__", ".mypy_cache", ".idea", ".vscode", ".cache"}
+        local ok_tel, builtin = pcall(require, "telescope.builtin")
+        if ok_tel and builtin[telescope_name] then
+            builtin[telescope_name](telescope_opts or {})
+            return
+        end
 
-    local cmd = {"fd", "--type", "f", "--hidden", "--no-ignore", "--no-ignore-parent"}
-    for _, ext in ipairs(include) do
-        vim.list_extend(cmd, {"--extension", ext})
+        vim.notify("No picker backend available", vim.log.levels.WARN)
     end
-    for _, dir in ipairs(exclude) do
-        vim.list_extend(cmd, {"--exclude", dir})
-    end
+end
 
-    builtin.find_files({
-        find_command = cmd,
-        hidden = true
-    })
-end, vim.tbl_extend("force", default_opts, {
-    desc = "Find files (filtered)"
+map("n", ";", call_picker("files", "find_files"), vim.tbl_extend("force", default_opts, {
+    desc = "Find files"
 }))
 
-map("n", ".", builtin.live_grep, default_opts)
-map("n", ",", builtin.buffers, default_opts)
+map("n", ".", call_picker("grep", "live_grep"), vim.tbl_extend("force", default_opts, {
+    desc = "Live grep"
+}))
+
+map("n", ",", call_picker("buffers", "buffers"), vim.tbl_extend("force", default_opts, {
+    desc = "Buffers"
+}))
 
 map("n", "\\", function()
-    require("telescope").extensions.file_browser.file_browser({
-        path = "%:p:h",
-        select_buffer = true
-    })
-end, vim.tbl_extend("force", default_opts, {
-    desc = "File browser (current dir)"
-}))
+    local ok_snacks, snacks = pcall(require, "snacks")
+    if ok_snacks and snacks and snacks.explorer then
+        snacks.explorer()
+        return
+    end
 
-map("n", "<leader>ff", builtin.find_files, default_opts)
-map("n", "<leader>fg", builtin.git_files, default_opts)
-map("n", "<leader>fw", builtin.grep_string, default_opts)
-map("n", "<leader>sh", builtin.help_tags, default_opts)
+    local ok_tree, api = pcall(require, "nvim-tree.api")
+    if ok_tree then
+        api.tree.toggle({
+            find_file = true
+        })
+        return
+    end
+
+    vim.notify("No explorer backend available", vim.log.levels.WARN)
+end, vim.tbl_extend("force", default_opts, {
+    desc = "File explorer"
+}))
 
 map({"n", "i"}, "<C-f>", function()
     if vim.fn.mode() == "i" then
         vim.cmd("normal! <Esc>")
     end
-    builtin.current_buffer_fuzzy_find({
-        layout_strategy = "vertical",
-        layout_config = {
-            width = 0.65,
-            height = 0.7,
-            prompt_position = "top",
-            preview_height = 0.45
-        },
-        sorting_strategy = "ascending"
-    })
+
+    local ok_snacks, snacks = pcall(require, "snacks")
+    if ok_snacks and snacks and snacks.picker and snacks.picker.lines then
+        snacks.picker.lines()
+        return
+    end
+
+    local ok_tel, builtin = pcall(require, "telescope.builtin")
+    if ok_tel and builtin.current_buffer_fuzzy_find then
+        builtin.current_buffer_fuzzy_find({
+            layout_strategy = "vertical",
+            layout_config = {
+                width = 0.65,
+                height = 0.7,
+                prompt_position = "top",
+                preview_height = 0.45
+            },
+            sorting_strategy = "ascending"
+        })
+        return
+    end
+
+    vim.notify("No in-buffer finder available", vim.log.levels.WARN)
 end, vim.tbl_extend("force", default_opts, {
     desc = "Fuzzy find in current buffer"
 }))
@@ -208,7 +232,7 @@ end, vim.tbl_extend("force", default_opts, {
     desc = "Find and Replace"
 }))
 
-map("n", "<F5>", function()
+map("n", "<F7>", function()
     local ft = vim.bo.filetype
     local build_cmd = ({
         cpp = "make -j$(nproc)",
@@ -246,4 +270,23 @@ end, {
     noremap = true,
     silent = false,
     desc = "Copilot accept / next completion / tab"
+})
+
+-- Add this to your keymaps.lua (e.g. in section 6. Plugins & Utilities)
+map("n", "<leader>rr", function()
+    -- Clear the Lua module cache for everything under your config dir
+    for name, _ in pairs(package.loaded) do
+        if name:match("^config%.") or name:match("^plugins%.") or name:match("^lua/") then
+            package.loaded[name] = nil
+        end
+    end
+
+    -- Re-source your main config files
+    dofile(vim.fn.stdpath("config") .. "/init.lua")
+    -- or if you use lazy.nvim bootstrap in init.lua:
+    -- require("lazy").sync()   -- optional: only if you want to force plugin check
+
+    vim.notify("Config reloaded!", vim.log.levels.INFO)
+end, {
+    desc = "Reload full config"
 })

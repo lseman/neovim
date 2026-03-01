@@ -5,72 +5,62 @@ return {
     "nvim-lua/plenary.nvim",
     "nvim-telescope/telescope.nvim",
   },
+
+  event = "VeryLazy",
+
   config = function()
     local harpoon = require("harpoon")
-    local telescope = require("telescope")
     local map = vim.keymap.set
+    local opts = { noremap = true, silent = true }
 
-    -- Correct setup call
-    harpoon.setup({
+    -- Setup with per-project persistence
+    harpoon:setup({
       settings = {
-        save_on_toggle = true,
-        sync_on_ui_close = true,
+        save_on_toggle    = true,
+        sync_on_ui_close  = true,
         key = function()
+          -- Makes the list unique per working directory + open file
           return vim.loop.cwd() .. vim.api.nvim_buf_get_name(0)
         end,
       },
     })
 
-    -- Define the Harpoon list object
     local list = harpoon:list()
 
-    -- Telescope integration
-    local function toggle_telescope(harpoon_list)
-      local ok, pickers = pcall(require, "telescope.pickers")
-      if not ok then return end
+    -- ── Your preferred shortcuts ────────────────────────────────────────────
+    map("n", "<F2>", function() list:add() end, vim.tbl_extend("force", opts, { desc = "Harpoon: Add file" }))
+    map("n", "<F3>", function()
+      require("telescope").extensions.harpoon.marks()
+    end, vim.tbl_extend("force", opts, { desc = "Harpoon: Telescope UI" }))
 
-      local items = harpoon_list.items or {}
-      if #items == 0 then
-        vim.notify("Harpoon list is empty", vim.log.levels.INFO)
-        return
-      end
+    -- ── Additional useful mappings (grouped under <leader>h) ────────────────
+    map("n", "<leader>hm", function() harpoon.ui:toggle_quick_menu(list) end,
+      vim.tbl_extend("force", opts, { desc = "Harpoon: Quick Menu" }))
 
-      local file_paths = vim.tbl_map(function(item) return item.value end, items)
-      pickers.new({}, {
-        prompt_title = "Harpoon",
-        finder = require("telescope.finders").new_table({ results = file_paths }),
-        previewer = require("telescope.config").values.file_previewer({}),
-        sorter = require("telescope.config").values.generic_sorter({}),
-      }):find()
-    end
+    -- Quick jumps to slots 1–4
+    -- map("n", "<C-h>", function() list:select(1) end, vim.tbl_extend("force", opts, { desc = "Harpoon → 1" }))
+    -- map("n", "<C-j>", function() list:select(2) end, vim.tbl_extend("force", opts, { desc = "Harpoon → 2" }))
+    -- map("n", "<C-k>", function() list:select(3) end, vim.tbl_extend("force", opts, { desc = "Harpoon → 3" }))
+    -- map("n", "<C-l>", function() list:select(4) end, vim.tbl_extend("force", opts, { desc = "Harpoon → 4" }))
 
-    -- Keymaps
-    map("n", "<F2>", function() list:add() end, { desc = "Harpoon: Add file" })
-    map("n", "<F3>", function() toggle_telescope(list) end, { desc = "Harpoon: Telescope UI" })
-    map("n", "<leader>hm", function() harpoon.ui:toggle_quick_menu(list) end, { desc = "Harpoon: Toggle Menu" })
+    -- Cycle through marks
+    map("n", "<C-S-P>", function() list:prev({ ui_nav_wrap = true }) end,
+      vim.tbl_extend("force", opts, { desc = "Harpoon: Previous" }))
+    map("n", "<C-S-N>", function() list:next({ ui_nav_wrap = true }) end,
+      vim.tbl_extend("force", opts, { desc = "Harpoon: Next" }))
 
-    -- Navigation
-    map("n", "<C-h>", function() list:select(1) end, { desc = "Harpoon: Jump to 1" })
-    map("n", "<C-j>", function() list:select(2) end, { desc = "Harpoon: Jump to 2" })
-    map("n", "<C-k>", function() list:select(3) end, { desc = "Harpoon: Jump to 3" })
-    map("n", "<C-l>", function() list:select(4) end, { desc = "Harpoon: Jump to 4" })
-
-    -- Cycle
-    map("n", "<C-S-P>", function() list:prev() end, { desc = "Harpoon: Previous mark" })
-    map("n", "<C-S-N>", function() list:next() end, { desc = "Harpoon: Next mark" })
-
-    -- Remove/Clear
+    -- Remove / Clear
     map("n", "<leader>hd", function()
       list:remove()
       vim.notify("Removed current file from Harpoon", vim.log.levels.INFO)
-    end, { desc = "Harpoon: Remove file" })
+    end, vim.tbl_extend("force", opts, { desc = "Harpoon: Remove current" }))
 
     map("n", "<leader>hc", function()
       list:clear()
-      vim.notify("Cleared all Harpoon marks", vim.log.levels.WARN)
-    end, { desc = "Harpoon: Clear all" })
+      vim.notify("Harpoon list cleared", vim.log.levels.WARN)
+    end, vim.tbl_extend("force", opts, { desc = "Harpoon: Clear all" }))
 
-    -- Safe load for telescope extension
-    pcall(telescope.load_extension, "harpoon")
+    -- Load telescope extension (safe)
+    pcall(require("telescope").load_extension, "harpoon")
   end,
 }

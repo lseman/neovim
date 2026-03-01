@@ -16,8 +16,12 @@ return {
       vim.g.molten_wrap_output = true
 
       vim.g.molten_image_provider = "image.nvim"
-      vim.g.molten_use_border_highlights = true
-      vim.g.molten_virt_lines_on_init_behavior = "split"
+      vim.g.molten_auto_image_popup = true
+      vim.g.molten_image_location = "both"
+      vim.g.molten_output_virt_lines = true
+      -- vim.g.molten_output_show_more = true
+      -- vim.g.molten_use_border_highlights = false
+      -- vim.g.molten_virt_lines_on_init_behavior = "split"
 
       -- Polling responsiveness
       vim.g.molten_tick_rate = 150
@@ -60,8 +64,8 @@ return {
           filetypes = { "markdown", "quarto", "vimwiki" },
         },
       },
-      max_width = 100,
-      max_height = 12,
+      max_width = 400,
+      max_height = 48,
       max_height_window_percentage = math.huge,
       max_width_window_percentage = math.huge,
       window_overlap_clear_enabled = true,

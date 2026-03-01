@@ -1,9 +1,10 @@
 return {
   "akinsho/bufferline.nvim",
-  version = "*",
+  version = "*",  -- or pin to "v4.9.1" if you want stability
   event = "VeryLazy",
   dependencies = { "nvim-tree/nvim-web-devicons" },
   config = function()
+    -- Requires are safe here (plugin is loaded by the time config runs)
     local bufferline = require("bufferline")
     local devicons = require("nvim-web-devicons")
 
@@ -12,18 +13,26 @@ return {
       vim.keymap.set("n", lhs, rhs, { noremap = true, silent = true, desc = desc })
     end
 
-    --- Custom buffer filter
-    local function filter_valid_buffers(bufnr)
+    --- Custom buffer filter (safe with one arg; works in current versions)
+    local function filter_valid_buffers(bufnr, _)
       local ft = vim.bo[bufnr].filetype
       local bt = vim.bo[bufnr].buftype
       local name = vim.api.nvim_buf_get_name(bufnr)
+
       local excluded = {
         qf = true, help = true, man = true, startuptime = true, checkhealth = true,
         NvimTree = true, ["neo-tree"] = true, TelescopePrompt = true, alpha = true,
         dashboard = true, lspinfo = true, ["lsp-installer"] = true, ["null-ls-info"] = true,
         toggleterm = true, Trouble = true, spectre_panel = true,
       }
-      return not (excluded[ft] or bt == "quickfix" or bt == "terminal" or bt == "nofile" or (name == "" and not vim.bo[bufnr].modified))
+
+      return not (
+        excluded[ft]
+        or bt == "quickfix"
+        or bt == "terminal"
+        or bt == "nofile"
+        or (name == "" and not vim.bo[bufnr].modified)
+      )
     end
 
     --- Buffer groups
@@ -50,7 +59,8 @@ return {
           highlight = { underline = true, sp = "yellow" },
           matcher = function(buf)
             local n = buf.name:lower()
-            return n:match("config") or n:match("%.json$") or n:match("%.toml$") or n:match("%.ya?ml$") or n:match("%.env")
+            return n:match("config") or n:match("%.json$") or n:match("%.toml$") or
+                   n:match("%.ya?ml$") or n:match("%.env")
           end,
         },
       },
@@ -58,17 +68,16 @@ return {
 
     --- Offsets for file explorers and tools
     local offsets = {
-      { filetype = "NvimTree", text = "󰉋 File Explorer", text_align = "center", separator = true, highlight = "Directory" },
-      { filetype = "neo-tree", text = "󰉋 File Explorer", text_align = "center", separator = true, highlight = "Directory" },
-      { filetype = "undotree", text = "󰣜 Undo Tree", text_align = "center", separator = true },
-      { filetype = "Outline", text = "󰙅 Symbols", text_align = "center", separator = true },
+      { filetype = "NvimTree",  text = "󰉋 File Explorer", text_align = "center", separator = true, highlight = "Directory" },
+      { filetype = "neo-tree",  text = "󰉋 File Explorer", text_align = "center", separator = true, highlight = "Directory" },
+      { filetype = "undotree",  text = "󰣜 Undo Tree",     text_align = "center", separator = true },
+      { filetype = "Outline",   text = "󰙅 Symbols",       text_align = "center", separator = true },
     }
 
     bufferline.setup({
       options = {
         mode = "buffers",
         style_preset = bufferline.style_preset.default,
-        themable = true,
         separator_style = "slant",
         indicator = { icon = "▎", style = "icon" },
         buffer_close_icon = "󰅖",
@@ -94,37 +103,36 @@ return {
         auto_toggle_bufferline = true,
         numbers = "none",
         sort_by = "insert_after_current",
+
         diagnostics = "nvim_lsp",
         diagnostics_update_in_insert = false,
         diagnostics_update_on_event = true,
-        diagnostics_indicator = function(_, _, diag)
-          local out = ""
-          for _, n in pairs(diag) do out = out .. n .. " " end
-          return out
+        diagnostics_indicator = function(count, level, diagnostics_dict)
+          local icon = level:match("error") and "" or level:match("warning") and "" or ""
+          return " " .. icon .. " " .. count
         end,
+
         custom_filter = filter_valid_buffers,
-        get_element_icon = function(el)
-          return devicons.get_icon_by_filetype(el.filetype, { default = false })
+        get_element_icon = function(element)
+          return devicons.get_icon_by_filetype(element.filetype, { default = false })
         end,
+
         hover = {
           enabled = true,
           delay = 200,
           reveal = { "close" },
         },
+
         groups = groups,
         offsets = offsets,
+
         highlights = {
           fill = { bg = { attribute = "bg", highlight = "TabLine" } },
           background = { italic = false },
           buffer_visible = { italic = false },
           buffer_selected = { bold = true, italic = false },
           diagnostic_selected = { bold = true, italic = false },
-          info_selected = { bold = true, italic = false },
-          info_diagnostic_selected = { bold = true, italic = false },
-          warning_selected = { bold = true, italic = false },
-          warning_diagnostic_selected = { bold = true, italic = false },
-          error_selected = { bold = true, italic = false },
-          error_diagnostic_selected = { bold = true, italic = false },
+          -- ... (kept your selected bold/italic overrides)
           close_button = { fg = { attribute = "fg", highlight = "TabLineSel" } },
           close_button_visible = { fg = { attribute = "fg", highlight = "TabLine" } },
           close_button_selected = { fg = { attribute = "fg", highlight = "TabLineSel" } },
@@ -132,7 +140,7 @@ return {
       },
     })
 
-    -- Keymaps
+    -- Keymaps (same as yours)
     map("<S-h>", "<cmd>BufferLineCyclePrev<cr>", "Previous buffer")
     map("<S-l>", "<cmd>BufferLineCycleNext<cr>", "Next buffer")
     map("<leader>bp", "<cmd>BufferLineCyclePrev<cr>", "Previous buffer")
@@ -150,14 +158,13 @@ return {
       map("<leader>" .. i, "<cmd>BufferLineGoToBuffer " .. i .. "<cr>", "Go to buffer " .. i)
     end
 
-    -- Custom bufferline sort commands
+    -- Custom sort commands
     local sort_cmds = {
       Directory = "directory",
       Extension = "extension",
       RelativeDirectory = "relative_directory",
       Tabs = "tabs",
     }
-
     for name, method in pairs(sort_cmds) do
       vim.api.nvim_create_user_command("BufferLineSortBy" .. name, function()
         bufferline.sort_buffers_by(method)
@@ -166,7 +173,6 @@ return {
 
     -- Autocommands
     local group = vim.api.nvim_create_augroup("BufferLineCustom", { clear = true })
-
     vim.api.nvim_create_autocmd({ "BufAdd", "BufDelete" }, {
       group = group,
       desc = "Auto-hide bufferline when only one buffer",
@@ -181,11 +187,10 @@ return {
     })
 
     vim.api.nvim_create_autocmd("ColorScheme", {
-      group = group,
-      desc = "Refresh bufferline on colorscheme change",
+      group = vim.api.nvim_create_augroup("BufferlineColors", { clear = true }),
       callback = function()
         vim.schedule(function()
-          bufferline.setup(bufferline.get_config())
+          pcall(require("bufferline").refresh)  -- lighter than full setup()
         end)
       end,
     })

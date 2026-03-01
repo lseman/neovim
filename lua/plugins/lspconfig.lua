@@ -87,9 +87,9 @@ return {
       map("n", "<leader>nb", require("nvim-navbuddy").open, "NavBuddy")
 
       -- Optional: only enable inlay hints for clients that support them well
-      if client.supports_method("textDocument/inlayHint") then
-        vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
-      end
+      -- if client.supports_method("textDocument/inlayHint") then
+      --   vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
+      -- end
     end
 
     -- ── Telescope setup ─────────────────────────────────────────────
