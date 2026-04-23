@@ -1,5 +1,21 @@
 require("lazy").setup({
     spec = {{
+        import = "plugins.ui"
+    }, {
+        import = "plugins.editor"
+    }, {
+        import = "plugins.navigation"
+    }, {
+        import = "plugins.lsp"
+    }, {
+        import = "plugins.git"
+    }, {
+        import = "plugins.notebooks"
+    }, {
+        import = "plugins.terminal"
+    }, {
+        import = "plugins.misc"
+    }, {
         import = "plugins"
     }},
     defaults = {
@@ -7,7 +23,11 @@ require("lazy").setup({
         version = false
     },
     install = {
+        missing = true,
         colorscheme = {"ayu", "habamax"}
+    },
+    ui = {
+        border = "rounded"
     },
     checker = {
         enabled = true,

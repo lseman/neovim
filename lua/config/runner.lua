@@ -312,7 +312,6 @@ function M.setup(opts)
                 silent = true
             }
             -- vim.keymap.set("n", "<F5>", M.run_file, opts)
-            vim.keymap.set("n", "<F6>", M.run_with_args, opts)
             vim.keymap.set("n", "<leader>rl", M.run_line, opts)
             vim.keymap.set("v", "<leader>rs", M.run_selection, opts)
             vim.keymap.set("n", "<leader>ri", M.run_interactive, opts)

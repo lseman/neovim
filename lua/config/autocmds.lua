@@ -2,56 +2,45 @@
 local create_group = vim.api.nvim_create_augroup
 local autocmd = vim.api.nvim_create_autocmd
 
+local function group(name)
+    return create_group(name, {
+        clear = true
+    })
+end
+
 -- Terminal and cursor settings
 autocmd("ExitPre", {
-    group = create_group("Exit", { clear = true }),
+    group = group("Exit"),
     command = "set guicursor=a:ver90",
     desc = "Set cursor back to beam when leaving Neovim"
-})
-
--- Diagnostic float
-autocmd("CursorHold", {
-    group = create_group("DiagnosticFloat", { clear = true }),
-    callback = function()
-        if #vim.diagnostic.get() > 0 then
-            vim.diagnostic.open_float({
-                focusable = false,
-                close_events = {"BufLeave", "CursorMoved", "InsertEnter", "FocusLost"},
-                border = "rounded",
-                source = "always",
-                prefix = " ",
-                scope = "cursor"
-            })
-        end
-    end,
-    desc = "Show diagnostics float on cursor hold"
 })
 
 -- Kitty terminal configuration
 local kitty = {
     set_spacing = function(padding, margin)
-        if vim.fn.executable("kitty") == 1 then
-            vim.system({
-                "kitty",
-                "@",
-                "set-spacing",
-                string.format("padding=%d", padding),
-                string.format("margin=%d", margin)
+        if vim.fn.executable("kitty") == 1 and vim.env.KITTY_PID then
+            vim.system({"kitty", "@", "set-spacing", string.format("padding=%d", padding),
+                        string.format("margin=%d", margin)}, {
+                text = true
             })
         end
     end
 }
 
-local kitty_group = create_group("KittyConfig", { clear = true })
+local kitty_group = group("KittyConfig")
 autocmd("VimEnter", {
     group = kitty_group,
-    callback = function() kitty.set_spacing(0, 0) end,
+    callback = function()
+        kitty.set_spacing(0, 0)
+    end,
     desc = "Remove Kitty padding/margin on enter"
 })
 
 autocmd("VimLeavePre", {
     group = kitty_group,
-    callback = function() kitty.set_spacing(20, 10) end,
+    callback = function()
+        kitty.set_spacing(20, 10)
+    end,
     desc = "Restore Kitty padding/margin on leave"
 })
 
@@ -83,7 +72,7 @@ local function format_cmake()
 end
 
 autocmd("BufWritePost", {
-    group = create_group("CMakeFormat", { clear = true }),
+    group = group("CMakeFormat"),
     pattern = "CMakeLists.txt",
     callback = format_cmake,
     desc = "Format CMakeLists.txt on save"
@@ -100,7 +89,7 @@ end
 
 -- Standard editor behavior
 autocmd("TextYankPost", {
-    group = create_group("HighlightYank", { clear = true }),
+    group = group("HighlightYank"),
     callback = function()
         vim.highlight.on_yank({
             higroup = "IncSearch",
@@ -110,20 +99,50 @@ autocmd("TextYankPost", {
     desc = "Highlight yanked text"
 })
 
+autocmd("BufWritePre", {
+    group = group("TrimTrailingWhitespace"),
+    pattern = "*",
+    callback = function(args)
+        local bufnr = args.buf
+        if vim.bo[bufnr].buftype ~= "" or not vim.bo[bufnr].modifiable or vim.bo[bufnr].binary then
+            return
+        end
+
+        local view = vim.fn.winsaveview()
+        local search = vim.fn.getreg("/")
+        local search_type = vim.fn.getregtype("/")
+
+        vim.cmd([[keeppatterns silent! %s/\s\+$//e]])
+
+        vim.fn.setreg("/", search, search_type)
+        vim.fn.winrestview(view)
+    end,
+    desc = "Trim trailing whitespace on save"
+})
+
+autocmd("FileType", {
+    group = group("FormatOptions"),
+    pattern = "*",
+    callback = function()
+        vim.opt_local.formatoptions:remove({"c", "r", "o"})
+    end,
+    desc = "Do not continue comments on new lines"
+})
+
 autocmd("BufReadPost", {
-    group = create_group("RestoreCursor", { clear = true }),
+    group = group("RestoreCursor"),
     callback = restore_cursor,
     desc = "Restore cursor position"
 })
 
 autocmd({"FocusGained", "TermClose", "TermLeave"}, {
-    group = create_group("CheckTime", { clear = true }),
+    group = group("CheckTime"),
     command = "checktime",
     desc = "Check if file changed externally"
 })
 
 autocmd("VimResized", {
-    group = create_group("AutoResize", { clear = true }),
+    group = group("AutoResize"),
     command = "wincmd =",
     desc = "Auto-resize windows"
 })

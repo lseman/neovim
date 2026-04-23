@@ -15,7 +15,10 @@ local function detect_and_activate_venv()
             local dir = cwd .. "/" .. name
             local py = dir .. "/bin/python"
             if vim.fn.executable(py) == 1 then
-                vim.g.python3_host_prog = py
+                -- NOTE: do NOT override python3_host_prog here; the remote
+                -- plugin host is already running by this point and changing
+                -- it has no effect.  System python3 (set in init.lua) must
+                -- have pynvim installed.
                 activate_venv(dir)
                 local version = vim.fn.systemlist(py .. " --version 2>&1")[1] or "unknown"
                 vim.notify("Python env: " .. dir .. " (" .. version:gsub("\n", "") .. ")", vim.log.levels.INFO)
@@ -148,9 +151,6 @@ local function setup_slime_and_molten_maps()
         desc = "Send entire buffer via slime"
     })
 
-    vim.keymap.set("n", "<F4>", select_current_cell, {
-        desc = "Select current # %% cell"
-    })
     vim.keymap.set("n", "<F5>", run_current_cell, {
         desc = "Run current # %% cell"
     })
@@ -160,31 +160,6 @@ local function setup_slime_and_molten_maps()
 end
 
 local function setup_runner_maps()
-    pcall(function()
-        local env = require("config.env")
-        env.setup({
-            venv_dirs = {".venv", "venv"},
-            auto_activate = true,
-            notify = true
-        })
-
-        vim.keymap.set("n", "<leader>va", env.activate, {
-            desc = "Activate venv"
-        })
-        vim.keymap.set("n", "<leader>vd", env.deactivate, {
-            desc = "Deactivate venv"
-        })
-        vim.keymap.set("n", "<leader>vs", env.select, {
-            desc = "Select venv"
-        })
-        vim.keymap.set("n", "<leader>vc", function()
-            local cur = env.current()
-            vim.print(cur and ("Active: " .. cur.name .. " (" .. cur.root .. ")") or "No venv active")
-        end, {
-            desc = "Show current venv"
-        })
-    end)
-
     pcall(function()
         local runner = require("config.runner")
         runner.setup({
@@ -217,8 +192,7 @@ end
 
 local function setup_user_commands()
     vim.api.nvim_create_user_command("HealthCheck", function()
-        local checks = {{"config.runner", "Python runner"}, {"telescope", "Telescope"}, {"notify", "nvim-notify"},
-                        {"snacks", "Snacks"}}
+        local checks = {{"config.runner", "Python runner"}, {"telescope", "Telescope"}, {"snacks", "Snacks"}}
 
         vim.print(
             "┌────────────────────── Health Check ──────────────────────┐")

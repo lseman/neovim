@@ -1,11 +1,11 @@
 local M = {}
 
-local diagnostics_enabled = true
 local popup_delay = 250
 local popup_timer = nil
 
 vim.diagnostic.config({
     virtual_text = false,
+    virtual_lines = false, -- set to true to replace virtual_text with full-line decorations (0.11+)
     signs = {
         text = {
             [vim.diagnostic.severity.ERROR] = "●",
@@ -21,7 +21,7 @@ vim.diagnostic.config({
         focusable = false,
         style = "minimal",
         border = "rounded",
-        source = "if_many",
+        source = true, -- 0.11: boolean replaces deprecated "always"/"if_many" strings
         header = "",
         prefix = " ",
         max_width = 100
@@ -29,7 +29,9 @@ vim.diagnostic.config({
 })
 
 local function show_diagnostics_popup()
-    if not diagnostics_enabled then
+    if not vim.diagnostic.is_enabled({
+        bufnr = 0
+    }) then
         return
     end
 
@@ -87,6 +89,18 @@ vim.api.nvim_create_autocmd("InsertEnter", {
     desc = "Cancel diagnostics popup timer on insert"
 })
 
+vim.api.nvim_create_autocmd({"BufLeave", "CursorMoved", "WinLeave"}, {
+    group = group,
+    callback = function()
+        if popup_timer then
+            popup_timer:stop()
+            popup_timer:close()
+            popup_timer = nil
+        end
+    end,
+    desc = "Cancel diagnostics popup timer when cursor context changes"
+})
+
 vim.api.nvim_create_user_command("DiagnosticDelay", function(opts)
     local new_delay = tonumber(opts.args)
     if not new_delay or new_delay < 10 then
@@ -103,17 +117,18 @@ end, {
 
 M.show_popup = show_diagnostics_popup
 M.toggle = function()
-    diagnostics_enabled = not diagnostics_enabled
-    if diagnostics_enabled then
-        vim.diagnostic.enable()
-        vim.notify("Diagnostics enabled", vim.log.levels.INFO)
-    else
-        vim.diagnostic.disable()
-        vim.notify("Diagnostics disabled", vim.log.levels.INFO)
-    end
+    local enabled = vim.diagnostic.is_enabled({
+        bufnr = 0
+    })
+    vim.diagnostic.enable(not enabled, {
+        bufnr = 0
+    })
+    vim.notify(enabled and "Diagnostics disabled" or "Diagnostics enabled", vim.log.levels.INFO)
 end
 M.status = function()
-    return diagnostics_enabled
+    return vim.diagnostic.is_enabled({
+        bufnr = 0
+    })
 end
 M.set_delay = function(delay)
     if type(delay) == "number" and delay >= 10 then

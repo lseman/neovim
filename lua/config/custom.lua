@@ -1,4 +1,4 @@
--- lua/buf_replace/init.lua
+-- lua/config/custom.lua - Find and Replace with live preview
 local M = {}
 
 -- Lazy telescope deps

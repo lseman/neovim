@@ -2,6 +2,7 @@
 -- Simplified – no custom nmap/imap/vmap helpers
 -- All mappings use vim.keymap.set directly
 local map = vim.keymap.set
+local integrations = require("config.integrations")
 local default_opts = {
     noremap = true,
     silent = true
@@ -127,99 +128,52 @@ map("v", "<S-Tab>", "<gv", default_opts)
 
 -- ── 5. Search / Picker (Snacks-first, Telescope fallback) ─────────────────
 
-local function call_picker(snacks_name, telescope_name, telescope_opts)
-    return function()
-        local ok_snacks, snacks = pcall(require, "snacks")
-        if ok_snacks and snacks and snacks.picker and snacks.picker[snacks_name] then
-            snacks.picker[snacks_name]()
-            return
-        end
-
-        local ok_tel, builtin = pcall(require, "telescope.builtin")
-        if ok_tel and builtin[telescope_name] then
-            builtin[telescope_name](telescope_opts or {})
-            return
-        end
-
-        vim.notify("No picker backend available", vim.log.levels.WARN)
-    end
-end
-
-map("n", ";", call_picker("files", "find_files"), vim.tbl_extend("force", default_opts, {
+map("n", ";", integrations.picker("files", "find_files"), vim.tbl_extend("force", default_opts, {
     desc = "Find files"
 }))
 
-map("n", ".", call_picker("grep", "live_grep"), vim.tbl_extend("force", default_opts, {
+map("n", ".", integrations.picker("grep", "live_grep"), vim.tbl_extend("force", default_opts, {
     desc = "Live grep"
 }))
 
-map("n", ",", call_picker("buffers", "buffers"), vim.tbl_extend("force", default_opts, {
+map("n", ",", integrations.picker("buffers", "buffers"), vim.tbl_extend("force", default_opts, {
     desc = "Buffers"
 }))
 
 map("n", "\\", function()
-    local ok_snacks, snacks = pcall(require, "snacks")
-    if ok_snacks and snacks and snacks.explorer then
-        snacks.explorer()
-        return
+    if not integrations.toggle_explorer() then
+        vim.notify("No explorer backend available", vim.log.levels.WARN)
     end
-
-    local ok_tree, api = pcall(require, "nvim-tree.api")
-    if ok_tree then
-        api.tree.toggle({
-            find_file = true
-        })
-        return
-    end
-
-    vim.notify("No explorer backend available", vim.log.levels.WARN)
 end, vim.tbl_extend("force", default_opts, {
     desc = "File explorer"
 }))
 
-map({"n", "i"}, "<C-f>", function()
-    if vim.fn.mode() == "i" then
-        vim.cmd("normal! <Esc>")
+map("n", "<C-e>", function()
+    if not integrations.toggle_explorer() then
+        vim.notify("No explorer backend available", vim.log.levels.WARN)
     end
+end, vim.tbl_extend("force", default_opts, {
+    desc = "Toggle Explorer"
+}))
 
-    local ok_snacks, snacks = pcall(require, "snacks")
-    if ok_snacks and snacks and snacks.picker and snacks.picker.lines then
-        snacks.picker.lines()
-        return
+map("n", "<C-f>", function()
+    if not integrations.open_current_buffer_picker() then
+        vim.notify("No in-buffer finder available", vim.log.levels.WARN)
     end
-
-    local ok_tel, builtin = pcall(require, "telescope.builtin")
-    if ok_tel and builtin.current_buffer_fuzzy_find then
-        builtin.current_buffer_fuzzy_find({
-            layout_strategy = "vertical",
-            layout_config = {
-                width = 0.65,
-                height = 0.7,
-                prompt_position = "top",
-                preview_height = 0.45
-            },
-            sorting_strategy = "ascending"
-        })
-        return
-    end
-
-    vim.notify("No in-buffer finder available", vim.log.levels.WARN)
 end, vim.tbl_extend("force", default_opts, {
     desc = "Fuzzy find in current buffer"
 }))
 
 -- ── 6. Plugins & Utilities ─────────────────────────────────────────────
 
-map("n", "<C-e>", function()
-    require("nvim-tree.api").tree.toggle({
-        find_file = true
-    })
-end, vim.tbl_extend("force", default_opts, {
-    desc = "Toggle NvimTree"
-}))
-
 map("n", "<C-b>", function()
-    require("nabla").popup({
+    local ok, nabla = pcall(require, "nabla")
+    if not ok then
+        vim.notify("nabla is not available", vim.log.levels.WARN)
+        return
+    end
+
+    nabla.popup({
         border = "single"
     })
 end, vim.tbl_extend("force", default_opts, {
@@ -253,40 +207,37 @@ end, vim.tbl_extend("force", default_opts, {
     desc = "Smart build"
 }))
 
--- Copilot / completion Tab
+-- Copilot / completion Tab (after blink.cmp is loaded)
 vim.g.copilot_no_tab_map = true
+
 map("i", "<Tab>", function()
-    local suggestion = require("copilot.suggestion")
-    if suggestion.is_visible() then
+    local ok, suggestion = pcall(require, "copilot.suggestion")
+    if ok and suggestion and suggestion.is_visible() then
         suggestion.accept()
         return ""
-    elseif vim.fn.pumvisible() == 1 then
-        return "<C-n>"
-    else
-        return "<Tab>"
     end
+
+    -- Fallback to blink.cmp behavior or next completion
+    if vim.fn.pumvisible() == 1 then
+        return "<C-n>"
+    end
+
+    return "<Tab>"
 end, {
     expr = true,
     noremap = true,
-    silent = false,
+    silent = true,
     desc = "Copilot accept / next completion / tab"
 })
 
 -- Add this to your keymaps.lua (e.g. in section 6. Plugins & Utilities)
 map("n", "<leader>rr", function()
-    -- Clear the Lua module cache for everything under your config dir
-    for name, _ in pairs(package.loaded) do
-        if name:match("^config%.") or name:match("^plugins%.") or name:match("^lua/") then
-            package.loaded[name] = nil
-        end
-    end
-
-    -- Re-source your main config files
-    dofile(vim.fn.stdpath("config") .. "/init.lua")
-    -- or if you use lazy.nvim bootstrap in init.lua:
-    -- require("lazy").sync()   -- optional: only if you want to force plugin check
-
-    vim.notify("Config reloaded!", vim.log.levels.INFO)
+    vim.cmd("source " .. vim.fn.fnameescape(vim.env.MYVIMRC))
+    vim.notify("Core config reloaded", vim.log.levels.INFO)
 end, {
-    desc = "Reload full config"
+    desc = "Reload init.lua"
+})
+
+vim.keymap.set("n", "-", "<CMD>Oil<CR>", {
+    desc = "Open parent directory"
 })

@@ -1,7 +1,4 @@
--- Set leader key before plugins
-vim.g.mapleader = " "
-
--- Disable netrw (for nvim-tree)
+-- Disable netrw (Snacks explorer handles directory opening instead)
 vim.g.loaded_netrw = 1
 vim.g.loaded_netrwPlugin = 1
 
@@ -16,17 +13,31 @@ local ui_options = {
     termguicolors = true,
     showbreak = "↳ ",
     breakindent = true,
+    linebreak = true,
     wrap = true,
     mouse = "a",
-    updatetime = 250,
-    timeoutlen = 300,
+    clipboard = "unnamedplus",
+    signcolumn = "yes",
+    scrolloff = 5,
+    sidescrolloff = 8,
+    splitkeep = "screen",
+    confirm = true,
+    smoothscroll = true, -- native smooth scrolling (0.10+)
+    splitright = true,
+    splitbelow = true,
+    virtualedit = "block", -- free cursor in visual-block mode
+    jumpoptions = "view", -- restore view on <C-o>/<C-i> (0.10+)
+    cmdheight = 0, -- hide cmdline when not in use (0.10+)
+    exrc = true, -- allow project-local .nvim.lua config (0.10+)
+    laststatus = 3,
+    winborder = "rounded"
 }
 
 local search_options = {
     ignorecase = true,
     smartcase = true,
     hlsearch = true,
-    incsearch = true,
+    incsearch = true
 }
 
 local indent_options = {
@@ -36,27 +47,29 @@ local indent_options = {
     expandtab = true,
     autoindent = true,
     smartindent = true,
-    shiftround = true,
+    shiftround = true
 }
 
 local completion_options = {
     wildmode = "longest,list,full",
     pumheight = 10,
     completeopt = "menu,menuone,noselect",
+    inccommand = "split"
 }
 
 local file_options = {
     backup = false,
     swapfile = false,
     undofile = true,
-    writebackup = false,
+    writebackup = false
 }
 
 local performance_options = {
-    lazyredraw = false,
     hidden = true,
     history = 100,
     synmaxcol = 240,
+    updatetime = 200, -- faster completion/CursorHold trigger
+    timeoutlen = 300
 }
 
 -- ============================
@@ -69,68 +82,31 @@ local function apply_options(opts)
     end
 end
 
-for _, opts in ipairs({
-    ui_options,
-    search_options,
-    indent_options,
-    completion_options,
-    file_options,
-    performance_options,
-}) do
+for _, opts in ipairs(
+    {ui_options, search_options, indent_options, completion_options, file_options, performance_options}) do
     apply_options(opts)
 end
 
--- ============================
--- Highlight Groups
--- ============================
+local undodir = vim.fs.joinpath(vim.fn.stdpath("state"), "undo")
+vim.fn.mkdir(undodir, "p")
+vim.opt.undodir = undodir
 
-local highlights = {
-    Comment = { italic = true },
-    Function = { italic = true },
-    Type = { italic = true },
-    ["@keyword"] = { italic = true },
-    ["@variable"] = { bold = false },
-    ["@property"] = { italic = false },
-    ["@parameter"] = { italic = true },
-}
-
-for group, opts in pairs(highlights) do
-    vim.api.nvim_set_hl(0, group, opts)
+if vim.fn.executable("rg") == 1 then
+    vim.opt.grepprg = "rg --vimgrep --smart-case --hidden --glob=!.git"
+    vim.opt.grepformat = "%f:%l:%c:%m,%f:%l:%m"
 end
 
+vim.opt.diffopt:append("linematch:60")
+vim.opt.shortmess:append("Ic")
+vim.opt.sessionoptions:append("globals")
+
 -- ============================
--- Autocommands
+-- Treesitter Folds (native, 0.10+)
 -- ============================
-
-local augroup = vim.api.nvim_create_augroup("CustomSettings", { clear = true })
-
--- Remove trailing whitespace on save
-vim.api.nvim_create_autocmd("BufWritePre", {
-    group = augroup,
-    pattern = "*",
-    command = [[%s/\s\+$//e]],
-})
-
--- Return to last edit position on reopen
-vim.api.nvim_create_autocmd("BufReadPost", {
-    group = augroup,
-    pattern = "*",
-    callback = function()
-        local last_pos = vim.fn.line("'")
-        if last_pos > 0 and last_pos <= vim.fn.line("$") then
-            vim.fn.setpos(".", vim.fn.getpos("'"))
-        end
-    end,
-})
-
--- Highlight on yank
-vim.api.nvim_create_autocmd("TextYankPost", {
-    group = augroup,
-    pattern = "*",
-    callback = function()
-        vim.highlight.on_yank({
-            higroup = "IncSearch",
-            timeout = 200,
-        })
-    end,
-})
+vim.opt.foldmethod = "expr"
+vim.opt.foldexpr = "v:lua.vim.treesitter.foldexpr()"
+vim.opt.foldtext = "" -- transparent fold lines (shows first line as-is)
+vim.opt.foldlevel = 99 -- open all folds by default
+vim.opt.foldlevelstart = 99
+vim.opt.foldenable = false -- start unfolded; toggle with zi
+vim.opt.foldcolumn = "1" -- show fold indicator in sign column
