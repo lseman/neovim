@@ -3,7 +3,6 @@ return {
   branch = "harpoon2",
   dependencies = {
     "nvim-lua/plenary.nvim",
-    "nvim-telescope/telescope.nvim",
   },
 
   event = "VeryLazy",
@@ -56,13 +55,6 @@ return {
     local function open_list()
       local list = current_list()
       compact_list(list)
-
-      local ok, telescope = pcall(require, "telescope")
-      if ok and telescope.extensions and telescope.extensions.harpoon then
-        telescope.extensions.harpoon.marks()
-        return
-      end
-
       harpoon.ui:toggle_quick_menu(list)
     end
 
@@ -94,7 +86,5 @@ return {
       vim.notify("Harpoon list cleared", vim.log.levels.WARN)
     end, vim.tbl_extend("force", opts, { desc = "Harpoon: Clear all" }))
 
-    -- Load telescope extension (safe)
-    pcall(require("telescope").load_extension, "harpoon")
   end,
 }

@@ -113,6 +113,7 @@ return {
             cpp = {"clang-format"},
             c = {"clang-format"},
             java = {"google-java-format"},
+            cmake = {"cmake-format"},
 
             go = {"goimports", "gofmt"}
             -- go = { "gofumpt", "goimports", "gofmt" }, -- if you prefer gofumpt
@@ -154,6 +155,10 @@ return {
                             path = ctx.filename
                         })[1]
                 end
+            },
+
+            cmake_format = {
+                prepend_args = {}
             },
 
             clang_format = {

@@ -4,7 +4,6 @@ return {
   event = "InsertEnter",
   config = function()
     require("copilot").setup({
-      -- 🧠 Inline suggestions
       suggestion = {
         enabled = true,
         auto_trigger = true,
@@ -19,7 +18,6 @@ return {
         },
       },
 
-      -- 📋 Side panel for browsing suggestions
       panel = {
         enabled = true,
         auto_refresh = false,
@@ -36,10 +34,8 @@ return {
         },
       },
 
-      -- 🚫 Disable Copilot for non-coding filetypes
-      filetypes = vim.tbl_deep_extend("force", {
-        ["*"] = true, -- default: enabled
-      }, {
+      filetypes = {
+        ["*"] = true,
         yaml = false,
         markdown = false,
         help = false,
@@ -50,11 +46,10 @@ return {
         cvs = false,
         ["TelescopePrompt"] = false,
         ["dap-repl"] = false,
-        [""] = false, -- unnamed buffers
-      }),
+        [""] = false,
+      },
 
-      -- ⚙️ Runtime environment
-      copilot_node_command = "node", -- ensure >= Node 18.x
+      copilot_node_command = "node",
       server_opts_overrides = {},
     })
   end,

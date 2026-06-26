@@ -70,7 +70,25 @@ return {
         -- _signs_by_lnum = {},  -- internal
 
         on_attach = function(bufnr)
-            local gs = package.loaded.gitsigns
+            local gs = require("gitsigns")
+
+            local function is_notebook_buffer(bufnr)
+                local ft = vim.bo[bufnr].filetype
+                if ft == "quarto" or ft == "markdown" then
+                    return true
+                end
+
+                if ft == "python" or ft == "julia" or ft == "r" then
+                    local lines = vim.api.nvim_buf_get_lines(bufnr, 0, 20, false)
+                    for _, line in ipairs(lines) do
+                        if line:match("^%s*# %%%%") or line:match("^%s*%-%- %%%%") then
+                            return true
+                        end
+                    end
+                end
+
+                return false
+            end
 
             local function map(mode, lhs, rhs, desc)
                 vim.keymap.set(mode, lhs, rhs, {
@@ -80,21 +98,23 @@ return {
             end
 
             -- Navigation (smart: skips when in diff mode)
-            map("n", "]c", function()
-                if vim.wo.diff then
-                    return "]c"
-                end
-                vim.schedule(gs.next_hunk)
-                return "<Ignore>"
-            end, "Next Hunk")
+            if not is_notebook_buffer(bufnr) then
+                map("n", "]c", function()
+                    if vim.wo.diff then
+                        return "]c"
+                    end
+                    vim.schedule(gs.next_hunk)
+                    return "<Ignore>"
+                end, "Next Hunk")
 
-            map("n", "[c", function()
-                if vim.wo.diff then
-                    return "[c"
-                end
-                vim.schedule(gs.prev_hunk)
-                return "<Ignore>"
-            end, "Prev Hunk")
+                map("n", "[c", function()
+                    if vim.wo.diff then
+                        return "[c"
+                    end
+                    vim.schedule(gs.prev_hunk)
+                    return "<Ignore>"
+                end, "Prev Hunk")
+            end
 
             -- Actions
             map("n", "<leader>hs", gs.stage_hunk, "Stage Hunk")

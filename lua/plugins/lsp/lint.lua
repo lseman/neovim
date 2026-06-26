@@ -3,7 +3,7 @@ return {
   event = { "BufReadPost", "BufWritePost", "InsertLeave" },
   config = function()
     local lint = require("lint")
-    local uv = vim.uv or vim.loop
+    local uv = vim.uv
 
     -- Linters per filetype
     lint.linters_by_ft = {

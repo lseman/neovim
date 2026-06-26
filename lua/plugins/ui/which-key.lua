@@ -36,13 +36,12 @@ return {
             group = "+ ",
             ellipsis = "…",
             mappings = true,
-            -- rules = false,   -- or remove this line entirely (defaults to using built-ins safely)
             colors = true
         },
         show_help = true,
         show_keys = true,
         disable = {
-            filetypes = {"TelescopePrompt", "snacks_picker_list", "lazy", "alpha", "dashboard"}
+            filetypes = {"snacks_picker_list", "lazy", "alpha", "dashboard"}
         },
         plugins = {
             marks = true,
@@ -95,7 +94,7 @@ return {
             group = "󰗊 lazy / tools"
         }, {
             "<leader>n",
-            group = "󰙅 explorer"
+            group = "󰎟 notifications"
         }, {
             "<leader>p",
             group = "󰏖 plugins"
@@ -143,18 +142,6 @@ return {
             "<leader>e",
             desc = "File Explorer"
         }, {
-            "<leader>nt",
-            desc = "Toggle Explorer"
-        }, {
-            "<leader>nf",
-            desc = "Reveal File"
-        }, {
-            "<leader>nr",
-            desc = "Refresh Explorer"
-        }, {
-            "<leader>ng",
-            desc = "Git Status"
-        }, {
             "<leader>ww",
             "<cmd>update<cr>",
             desc = "Save"
@@ -188,11 +175,20 @@ return {
             "<leader>ff",
             desc = "Find Files"
         }, {
+            "<leader>fc",
+            desc = "Config Files"
+        }, {
             "<leader>fg",
             desc = "Live Grep"
         }, {
+            "<leader>fG",
+            desc = "Git Files"
+        }, {
             "<leader>fb",
             desc = "Find Buffers"
+        }, {
+            "<leader>fp",
+            desc = "Projects"
         }, {
             "<leader>fh",
             desc = "Help Tags"
@@ -205,6 +201,84 @@ return {
         }, {
             "<leader>fn",
             desc = "Notifications"
+        }, {
+            "<leader>sB",
+            desc = "Grep Open Buffers"
+        }, {
+            '<leader>s"',
+            desc = "Registers"
+        }, {
+            "<leader>s/",
+            desc = "Search History"
+        }, {
+            "<leader>sc",
+            desc = "Command History"
+        }, {
+            "<leader>sC",
+            desc = "Commands"
+        }, {
+            "<leader>sD",
+            desc = "Buffer Diagnostics"
+        }, {
+            "<leader>sj",
+            desc = "Jumps"
+        }, {
+            "<leader>sl",
+            desc = "Location List"
+        }, {
+            "<leader>sm",
+            desc = "Marks"
+        }, {
+            "<leader>sp",
+            desc = "Plugin Spec Search"
+        }, {
+            "<leader>sq",
+            desc = "Quickfix List"
+        }, {
+            "<leader>sR",
+            desc = "Resume Picker"
+        }, {
+            "<leader>sr",
+            desc = "Search and Replace"
+        }, {
+            "<leader>rF",
+            desc = "Search and Replace Scratch"
+        }, {
+            "<leader>rw",
+            desc = "Replace Word"
+        }, {
+            "<leader>uC",
+            desc = "Colorschemes"
+        }, {
+            "<leader>n",
+            desc = "Notification History"
+        }, {
+            "<leader>gk",
+            desc = "Git Branches"
+        }, {
+            "<leader>gl",
+            desc = "Git Log"
+        }, {
+            "<leader>gL",
+            desc = "Git Log Line"
+        }, {
+            "<leader>gf",
+            desc = "Git Log File"
+        }, {
+            "<leader>lp",
+            desc = "Toggle LSP Progress HUD"
+        }, {
+            "<leader>lh",
+            desc = "Fidget History"
+        }, {
+            "<leader>lH",
+            desc = "Clear Fidget History"
+        }, {
+            "<leader>lc",
+            desc = "Clear Active Progress"
+        }, {
+            "<leader>cR",
+            desc = "Rename File"
         }, -- LSP
         {
             "<leader>ca",
@@ -227,9 +301,6 @@ return {
         }, {
             "<leader>dl",
             desc = "Line Diagnostics"
-        }, {
-            "<leader>nb",
-            desc = "NavBuddy"
         }, {
             "<leader>fm",
             desc = "Format Buffer"

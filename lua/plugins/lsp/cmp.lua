@@ -87,7 +87,8 @@ local autopairs_spec = {
     end
 }
 
--- blink.cmp: modern completion engine (replaces nvim-cmp)
+-- blink.cmp: modern completion engine
+-- opts are defined in config/cmp.lua
 local blink_spec = {
     "saghen/blink.cmp",
     event = {"InsertEnter", "CmdlineEnter"},
@@ -95,58 +96,10 @@ local blink_spec = {
     dependencies = {"L3MON4D3/LuaSnip"},
     ---@module 'blink.cmp'
     ---@type blink.cmp.Config
-    opts = {
-        keymap = {
-            preset = "default",
-            ["<C-k>"] = {"select_prev", "fallback"},
-            ["<C-j>"] = {"select_next", "fallback"},
-            ["<C-u>"] = {"scroll_documentation_up", "fallback"},
-            ["<C-d>"] = {"scroll_documentation_down", "fallback"},
-            ["<C-e>"] = {"cancel", "fallback"},
-            ["<CR>"] = {"accept", "fallback"},
-            ["<S-Tab>"] = {"snippet_backward", "fallback"}
-        },
-        snippets = {
-            preset = "luasnip"
-        },
-        sources = {
-            default = {"lsp", "path", "snippets", "buffer"}
-        },
-        completion = {
-            accept = {
-                auto_brackets = {
-                    enabled = true
-                }
-            },
-            documentation = {
-                auto_show = true,
-                auto_show_delay_ms = 150
-            },
-            ghost_text = {
-                enabled = false  -- copilot.lua renders inline suggestions instead
-            },
-            menu = {
-                border = "rounded",
-                draw = {
-                    treesitter = {"lsp"},
-                    columns = {{"kind_icon"}, {
-                        "label",
-                        "label_description",
-                        gap = 1
-                    }, {"source_name"}}
-                }
-            }
-        },
-        signature = {
-            enabled = true,
-            window = {
-                border = "rounded"
-            }
-        },
-        appearance = {
-            nerd_font_variant = "mono"
-        }
-    },
+    opts = function()
+        local config = require("config.cmp")
+        return config()
+    end,
     opts_extend = {"sources.default"}
 }
 

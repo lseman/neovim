@@ -44,40 +44,6 @@ autocmd("VimLeavePre", {
     desc = "Restore Kitty padding/margin on leave"
 })
 
--- CMake formatting
-local function format_cmake()
-    if vim.fn.executable("cmake-format") ~= 1 then
-        vim.notify("cmake-format not found", vim.log.levels.WARN)
-        return
-    end
-
-    local bufnr = vim.api.nvim_get_current_buf()
-    local filename = vim.api.nvim_buf_get_name(bufnr)
-    local cursor_pos = vim.api.nvim_win_get_cursor(0)
-
-    vim.cmd("write")
-    vim.fn.jobstart({"cmake-format", "-i", filename}, {
-        on_exit = function(_, code)
-            if code == 0 then
-                vim.cmd("edit!")
-                vim.schedule(function()
-                    pcall(vim.api.nvim_win_set_cursor, 0, cursor_pos)
-                end)
-                vim.notify("CMake formatting complete", vim.log.levels.INFO)
-            else
-                vim.notify("cmake-format failed", vim.log.levels.ERROR)
-            end
-        end
-    })
-end
-
-autocmd("BufWritePost", {
-    group = group("CMakeFormat"),
-    pattern = "CMakeLists.txt",
-    callback = format_cmake,
-    desc = "Format CMakeLists.txt on save"
-})
-
 -- Additional commands
 local function restore_cursor()
     local mark = vim.api.nvim_buf_get_mark(0, '"')
@@ -145,4 +111,27 @@ autocmd("VimResized", {
     group = group("AutoResize"),
     command = "wincmd =",
     desc = "Auto-resize windows"
+})
+
+-- Large file guard: disable expensive features for files > 1MB
+autocmd("BufReadPre", {
+    group = group("LargeFile"),
+    callback = function(args)
+        local ok, stat = pcall(vim.uv.fs_stat, vim.api.nvim_buf_get_name(args.buf))
+        if not ok or not stat or stat.size < 1024 * 1024 then return end
+        vim.b[args.buf].large_file = true
+        vim.opt_local.swapfile = false
+        vim.opt_local.undofile = false
+        vim.opt_local.foldmethod = "manual"
+        vim.opt_local.syntax = "off"
+        vim.cmd("syntax off")
+        vim.api.nvim_create_autocmd("BufReadPost", {
+            buffer = args.buf,
+            once = true,
+            callback = function()
+                vim.treesitter.stop(args.buf)
+            end,
+        })
+    end,
+    desc = "Disable expensive features for large files",
 })

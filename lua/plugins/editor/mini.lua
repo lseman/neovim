@@ -31,14 +31,12 @@ return {
     config = function(_, opts)
       local map = require("mini.map")
 
-      -- Safe generation of integrations
       local integrations = {}
-      local ok, gen = pcall(map.gen_integration)
-      if ok and gen then
+      local gen = map.gen_integration
+      if gen then
         table.insert(integrations, gen.builtin_search())
         table.insert(integrations, gen.gitsigns())
         table.insert(integrations, gen.diagnostic())
-        -- table.insert(integrations, gen.wrap())  -- optional: shows wrapped lines
       end
       opts.integrations = integrations
 

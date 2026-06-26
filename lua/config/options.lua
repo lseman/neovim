@@ -2,6 +2,19 @@
 vim.g.loaded_netrw = 1
 vim.g.loaded_netrwPlugin = 1
 
+-- Native OSC52 clipboard (works over SSH/tmux without extra tools)
+vim.g.clipboard = {
+    name = "OSC52",
+    copy = {
+        ["+"] = require("vim.ui.clipboard.osc52").copy("+"),
+        ["*"] = require("vim.ui.clipboard.osc52").copy("*"),
+    },
+    paste = {
+        ["+"] = require("vim.ui.clipboard.osc52").paste("+"),
+        ["*"] = require("vim.ui.clipboard.osc52").paste("*"),
+    },
+}
+
 -- ============================
 -- Editor Option Groups
 -- ============================
@@ -27,7 +40,6 @@ local ui_options = {
     splitbelow = true,
     virtualedit = "block", -- free cursor in visual-block mode
     jumpoptions = "view", -- restore view on <C-o>/<C-i> (0.10+)
-    cmdheight = 0, -- hide cmdline when not in use (0.10+)
     exrc = true, -- allow project-local .nvim.lua config (0.10+)
     laststatus = 3,
     winborder = "rounded"

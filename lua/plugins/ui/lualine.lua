@@ -38,6 +38,20 @@ return {
             return (status and status ~= "") and status or ""
         end
 
+        local function molten_statusline()
+            local ok, status = pcall(require, "molten.status")
+            if not ok then
+                return ""
+            end
+
+            local kernels = status.kernels()
+            if kernels and kernels ~= "" then
+                return "󱓞 " .. kernels
+            end
+
+            return status.initialized() == "Molten" and "󱓞 Molten" or ""
+        end
+
         require("lualine").setup({
             options = {
                 icons_enabled = true,
@@ -51,7 +65,7 @@ return {
                     right = ""
                 },
                 disabled_filetypes = {
-                    statusline = {"snacks_picker_list", "alpha", "dashboard", "toggleterm", "packer"},
+                    statusline = {"snacks_picker_list", "alpha", "dashboard", "toggleterm"},
                     winbar = {}
                 },
                 always_divide_middle = true,
@@ -85,6 +99,12 @@ return {
                     venv_statusline,
                     color = {
                         fg = "#a6e3a1",
+                        gui = "bold"
+                    }
+                }, {
+                    molten_statusline,
+                    color = {
+                        fg = "#f9e2af",
                         gui = "bold"
                     }
                 }, "encoding", "fileformat", "filetype", {

@@ -22,4 +22,23 @@ function M.status()
     return ""
 end
 
+function M.notify_loaded(path, version)
+    local name = basename(path) or path or "environment"
+    local details = version and version ~= "" and (" (" .. version:gsub("\n", "") .. ")") or ""
+    local message = "Loaded env: " .. name .. details
+
+    local function notify()
+        vim.notify(message, vim.log.levels.INFO)
+    end
+
+    if vim.v.vim_did_enter == 1 then
+        vim.schedule(notify)
+    else
+        vim.api.nvim_create_autocmd("UIEnter", {
+            once = true,
+            callback = notify
+        })
+    end
+end
+
 return M

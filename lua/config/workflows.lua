@@ -1,9 +1,22 @@
 local M = {}
 
+local venv_activated_callbacks = {}
+
+local function on_venv_activated(fn)
+    table.insert(venv_activated_callbacks, fn)
+end
+
+M.on_venv_activated = on_venv_activated
+
 local function activate_venv(venv_dir)
     local venv_bin = venv_dir .. "/bin"
     vim.env.PATH = venv_bin .. ":" .. vim.env.PATH
     vim.env.VIRTUAL_ENV = venv_dir
+    vim.schedule(function()
+        for _, fn in ipairs(venv_activated_callbacks) do
+            pcall(fn, venv_dir)
+        end
+    end)
 end
 
 local function detect_and_activate_venv()
@@ -21,7 +34,7 @@ local function detect_and_activate_venv()
                 -- have pynvim installed.
                 activate_venv(dir)
                 local version = vim.fn.systemlist(py .. " --version 2>&1")[1] or "unknown"
-                vim.notify("Python env: " .. dir .. " (" .. version:gsub("\n", "") .. ")", vim.log.levels.INFO)
+                require("config.env").notify_loaded(dir, version)
                 return true
             end
         end
@@ -43,120 +56,22 @@ local function select_current_cell()
     vim.fn.setpos("'<", {buf, prev, 1, 0})
     vim.fn.setpos("'>", {buf, next_cell - 1, 999, 0})
     vim.cmd("normal! gv")
+
+    return prev, next_cell - 1
 end
 
 local function run_current_cell()
-    select_current_cell()
-    vim.cmd("MoltenEvaluateVisual")
+    local start_line, end_line = select_current_cell()
+
+    local ok, err = pcall(vim.fn.MoltenEvaluateRange, start_line, end_line)
+    if not ok then
+        vim.notify("Molten range evaluation failed: " .. tostring(err), vim.log.levels.ERROR)
+        return
+    end
+
     vim.schedule(function()
         pcall(vim.cmd, "MoltenShowOutput")
     end)
-end
-
-local function setup_ipython_terminal_maps()
-    _G.last_terminal_jobid = _G.last_terminal_jobid or nil
-
-    vim.keymap.set("n", "<leader>tt", function()
-        local old = vim.o.splitright
-        vim.o.splitright = true
-        vim.cmd("vsplit | terminal")
-        vim.o.splitright = old
-
-        vim.defer_fn(function()
-            local jobid = vim.b.terminal_job_id
-            if not jobid then
-                vim.notify("No terminal job ID detected", vim.log.levels.ERROR)
-                return
-            end
-
-            _G.last_terminal_jobid = jobid
-            local send = function(cmd)
-                vim.api.nvim_chan_send(jobid, cmd .. "\n")
-            end
-
-            send("tmux")
-            send("source .venv/bin/activate 2>/dev/null || true")
-            send("ipython")
-            vim.notify("IPython terminal ready", vim.log.levels.INFO)
-        end, 150)
-    end, {
-        desc = "Open IPython terminal"
-    })
-
-    vim.keymap.set("n", "<leader>tr", function()
-        local job = _G.last_terminal_jobid
-        if job then
-            vim.api.nvim_chan_send(job, "%reset -f\n")
-            vim.notify("IPython reset sent", vim.log.levels.INFO)
-        else
-            vim.notify("No IPython terminal active", vim.log.levels.WARN)
-        end
-    end, {
-        desc = "Reset IPython session"
-    })
-
-    vim.keymap.set("n", "<leader>rs", function()
-        local start = vim.fn.search("^# %%", "bnW")
-        local end_ = vim.fn.search("^# %%", "nW")
-
-        start = (start == 0) and 1 or (start + 1)
-        end_ = (end_ == 0) and (vim.fn.line("$") + 1) or (end_ - 1)
-
-        local lines = vim.api.nvim_buf_get_lines(0, start - 1, end_, false)
-        local code = table.concat(lines, "\n")
-        local payload = "%cpaste -q\n" .. code .. "\n--\n"
-
-        if _G.last_terminal_jobid then
-            vim.api.nvim_chan_send(_G.last_terminal_jobid, payload)
-        else
-            vim.notify("No IPython terminal active (use <leader>tt)", vim.log.levels.ERROR)
-        end
-    end, {
-        desc = "Send current cell to IPython"
-    })
-
-    vim.keymap.set("n", "<leader>tx", function()
-        if _G.last_terminal_jobid then
-            vim.api.nvim_chan_send(_G.last_terminal_jobid, "exit\n")
-            _G.last_terminal_jobid = nil
-            vim.notify("Terminal session closed", vim.log.levels.INFO)
-        else
-            vim.notify("No active terminal", vim.log.levels.WARN)
-        end
-    end, {
-        desc = "Close IPython terminal"
-    })
-end
-
-local function setup_slime_and_molten_maps()
-    vim.g.slime_target = "tmux"
-    vim.g.slime_default_config = {
-        socket_name = "default",
-        target_pane = ":.1"
-    }
-    vim.g.slime_dont_ask_default = 1
-
-    vim.keymap.set("n", "<leader>R", function()
-        if vim.fn.exists("*slime#send") == 0 then
-            vim.notify("vim-slime not loaded", vim.log.levels.ERROR)
-            return
-        end
-
-        local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-        for i, line in ipairs(lines) do
-            lines[i] = line:gsub("\r", ""):gsub("\t", " "):gsub("%s+$", "")
-        end
-        vim.fn["slime#send"](table.concat(lines, "\n") .. "\n")
-    end, {
-        desc = "Send entire buffer via slime"
-    })
-
-    vim.keymap.set("n", "<F5>", run_current_cell, {
-        desc = "Run current # %% cell"
-    })
-    vim.keymap.set("n", "<leader>mr", "<cmd>MoltenRestart<CR>", {
-        desc = "Restart Molten kernel"
-    })
 end
 
 local function setup_runner_maps()
@@ -191,18 +106,44 @@ local function setup_runner_maps()
 end
 
 local function setup_user_commands()
-    vim.api.nvim_create_user_command("HealthCheck", function()
-        local checks = {{"config.runner", "Python runner"}, {"telescope", "Telescope"}, {"snacks", "Snacks"}}
+    local function config_health()
+        local checks = {{"config.runner", "Python runner"}, {"snacks", "Snacks"}, {"blink.cmp", "Blink cmp"},
+                        {"conform", "Conform"}, {"lint", "nvim-lint"}, {"render-markdown", "Markdown renderer"},
+                        {"grug-far", "GrugFar"}, {"kulala", "Kulala"}, {"lazydev", "LazyDev"}}
+        local tools = {{"python3", "Python"}, {"jupyter", "Jupyter"}, {"quarto", "Quarto"}, {"magick", "ImageMagick"},
+                       {"rg", "ripgrep"}, {"fd", "fd"}, {"stylua", "Stylua"}}
+        local python_host = vim.g.python3_host_prog or vim.fn.exepath("python3")
+        local python_host_ok = python_host ~= "" and vim.fn.executable(python_host) == 1
+        local molten_deps_ok = python_host_ok and
+                                   vim.system(
+                                       {python_host, "-c",
+                                        "import pynvim, jupyter_client, nbformat, PIL, requests, websocket"}):wait()
+                                       .code == 0
 
         vim.print(
-            "┌────────────────────── Health Check ──────────────────────┐")
+            "┌────────────────────── Config Health ──────────────────────┐")
         for _, check in ipairs(checks) do
             local ok = pcall(require, check[1])
-            vim.print(string.format("│ %-20s : %s", check[2], ok and "✓ OK" or "✗ Missing"))
+            vim.print(string.format("│ %-22s : %s", check[2], ok and "✓ OK" or "✗ Missing"))
         end
-        vim.print("│ vim-slime              : " .. (vim.g.loaded_slime and "✓ OK" or "✗ Missing"))
+        for _, tool in ipairs(tools) do
+            local ok = vim.fn.executable(tool[1]) == 1
+            vim.print(string.format("│ %-22s : %s", tool[2], ok and "✓ OK" or "✗ Missing"))
+        end
+        vim.print(string.format("│ %-22s : %s", "Python host",
+            python_host_ok and "✓ " .. python_host or "✗ Missing"))
+        vim.print(string.format("│ %-22s : %s", "Molten Python deps", molten_deps_ok and "✓ OK" or "✗ Missing"))
+        vim.print("│ env                    : " .. (vim.env.VIRTUAL_ENV or vim.env.CONDA_DEFAULT_ENV or "none"))
         vim.print(
             "└──────────────────────────────────────────────────────────┘")
+    end
+
+    vim.api.nvim_create_user_command("ConfigHealth", config_health, {
+        desc = "Show configuration health status"
+    })
+
+    vim.api.nvim_create_user_command("HealthCheck", function()
+        vim.cmd("ConfigHealth")
     end, {
         desc = "Show configuration health status"
     })
@@ -219,15 +160,18 @@ local function setup_user_commands()
         desc = "Reload entire config"
     })
 
-    vim.keymap.set("n", "<leader>ch", "<cmd>HealthCheck<CR>", {
-        desc = "Health check"
+    vim.keymap.set("n", "<leader>ch", "<cmd>ConfigHealth<CR>", {
+        desc = "Config health"
     })
 end
 
 function M.setup()
-    detect_and_activate_venv()
-    setup_ipython_terminal_maps()
-    setup_slime_and_molten_maps()
+    vim.api.nvim_create_autocmd("VimEnter", {
+        once = true,
+        callback = function()
+            detect_and_activate_venv()
+        end,
+    })
     setup_runner_maps()
     setup_user_commands()
 end

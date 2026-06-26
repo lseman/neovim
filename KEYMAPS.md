@@ -1,159 +1,428 @@
 # Neovim Keymap Cheatsheet
 
-- Generated: 2026-03-01 08:08:23
-- Buffer: [No Name]
-- Filetype: none
+- Updated: 2026-06-26
+- Source: keymaps.lua + plugin keys blocks (snacks, gitsigns, molten, quarto, grug-far, neogit, conform, lspconfig, which-key)
+
+> **⚠ Conflict**: `<leader>gd` — snacks.lua maps to Git Diff (Hunks), neogit.lua maps to DiffviewOpen. neogit wins (registered later).
+
+---
 
 ## Normal
 
-| Key | Description | Scope | Action |
-| --- | --- | --- | --- |
-| ` R` | Send entire buffer via slime | global | `lua/callback` |
-| ` ch` | Health check | global | `<Cmd>HealthCheck<CR>` |
-| ` cl` | LSP Info | global | `lua/callback` |
-| ` cs` | Symbols | global | `lua/callback` |
-| ` fK` | Find: Generated Keymap Cheatsheet | global | `lua/callback` |
-| ` fW` | Find: Write Keymap Cheatsheet | global | `lua/callback` |
-| ` mr` | Restart Molten kernel | global | `<Cmd>MoltenRestart<CR>` |
-| ` pa` | Run with args | global | `lua/callback` |
-| ` ph` | Run from history | global | `lua/callback` |
-| ` pi` | Python interactive | global | `lua/callback` |
-| ` pr` | Repeat last run | global | `lua/callback` |
-| ` pt` | Toggle Python terminal | global | `lua/callback` |
-| ` py` | Run Python file | global | `lua/callback` |
-| ` rr` | Reload full config | global | `lua/callback` |
-| ` rs` | Send current cell to IPython | global | `lua/callback` |
-| ` tr` | Reset IPython session | global | `lua/callback` |
-| ` tt` | Open IPython terminal | global | `lua/callback` |
-| ` tx` | Close IPython terminal | global | `lua/callback` |
-| ` xL` | Location List | global | `lua/callback` |
-| ` xQ` | Quickfix List | global | `lua/callback` |
-| ` xX` | Buffer Diagnostics | global | `lua/callback` |
-| ` xx` | Diagnostics (Trouble) | global | `lua/callback` |
-| `&` | :help &-default | global | `:&&<CR>` |
-| `,` | Buffers | global | `lua/callback` |
-| `.` | Live grep | global | `lua/callback` |
-| `;` | Find files | global | `lua/callback` |
-| `<C-1>` | Buffer 1 | global | `lua/callback` |
-| `<C-2>` | Buffer 2 | global | `lua/callback` |
-| `<C-3>` | Buffer 3 | global | `lua/callback` |
-| `<C-4>` | Buffer 4 | global | `lua/callback` |
-| `<C-5>` | Buffer 5 | global | `lua/callback` |
-| `<C-6>` | Buffer 6 | global | `lua/callback` |
-| `<C-7>` | Buffer 7 | global | `lua/callback` |
-| `<C-8>` | Buffer 8 | global | `lua/callback` |
-| `<C-9>` | Buffer 9 | global | `lua/callback` |
-| `<C-A>` | Select all | global | `<Esc>ggVG` |
-| `<C-B>` | Nabla popup | global | `lua/callback` |
-| `<C-E>` | Toggle NvimTree | global | `lua/callback` |
-| `<C-F>` | Fuzzy find in current buffer | global | `lua/callback` |
-| `<C-H>` | Find and Replace | global | `lua/callback` |
-| `<C-L>` | :help CTRL-L-default | global | `<Cmd>nohlsearch\|diffupdate\|normal! <C-L><CR>` |
-| `<C-Q>` | Quit (confirm if modified) | global | `lua/callback` |
-| `<C-S>` | Save file | global | `<Cmd>update<CR>` |
-| `<C-W><C-D>` | Show diagnostics under the cursor | global | `<C-W>d` |
-| `<C-W>d` | Show diagnostics under the cursor | global | `lua/callback` |
-| `<F4>` | Select current # %% cell | global | `lua/callback` |
-| `<F5>` | Run current # %% cell | global | `lua/callback` |
-| `<F7>` | Smart build | global | `lua/callback` |
-| `Y` | :help Y-default | global | `y$` |
-| `[ ` | Add empty line above cursor | global | `lua/callback` |
-| `[<C-L>` | :lpfile | global | `lua/callback` |
-| `[<C-Q>` | :cpfile | global | `lua/callback` |
-| `[<C-T>` | :ptprevious | global | `lua/callback` |
-| `[A` | :rewind | global | `lua/callback` |
-| `[B` | :brewind | global | `lua/callback` |
-| `[D` | Jump to the first diagnostic in the current buffer | global | `lua/callback` |
-| `[L` | :lrewind | global | `lua/callback` |
-| `[Q` | :crewind | global | `lua/callback` |
-| `[T` | :trewind | global | `lua/callback` |
-| `[a` | :previous | global | `lua/callback` |
-| `[b` | :bprevious | global | `lua/callback` |
-| `[d` | Jump to the previous diagnostic in the current buffer | global | `lua/callback` |
-| `[l` | :lprevious | global | `lua/callback` |
-| `[q` | :cprevious | global | `lua/callback` |
-| `[t` | :tprevious | global | `lua/callback` |
-| `\` | File explorer | global | `lua/callback` |
-| `] ` | Add empty line below cursor | global | `lua/callback` |
-| `]<C-L>` | :lnfile | global | `lua/callback` |
-| `]<C-Q>` | :cnfile | global | `lua/callback` |
-| `]<C-T>` | :ptnext | global | `lua/callback` |
-| `]A` | :last | global | `lua/callback` |
-| `]B` | :blast | global | `lua/callback` |
-| `]D` | Jump to the last diagnostic in the current buffer | global | `lua/callback` |
-| `]L` | :llast | global | `lua/callback` |
-| `]Q` | :clast | global | `lua/callback` |
-| `]T` | :tlast | global | `lua/callback` |
-| `]a` | :next | global | `lua/callback` |
-| `]b` | :bnext | global | `lua/callback` |
-| `]d` | Jump to the next diagnostic in the current buffer | global | `lua/callback` |
-| `]l` | :lnext | global | `lua/callback` |
-| `]q` | :cnext | global | `lua/callback` |
-| `]t` | :tnext | global | `lua/callback` |
-| `gO` | vim.lsp.buf.document_symbol() | global | `lua/callback` |
-| `gc` | Toggle comment | global | `lua/callback` |
-| `gcc` | Toggle comment line | global | `lua/callback` |
-| `gra` | vim.lsp.buf.code_action() | global | `lua/callback` |
-| `gri` | vim.lsp.buf.implementation() | global | `lua/callback` |
-| `grn` | vim.lsp.buf.rename() | global | `lua/callback` |
-| `grr` | vim.lsp.buf.references() | global | `lua/callback` |
-| `grt` | vim.lsp.buf.type_definition() | global | `lua/callback` |
-| `gx` | Opens filepath or URI under cursor with the system handler (file explorer, web browser, …) | global | `lua/callback` |
+### Core
+
+| Key | Description |
+| --- | --- |
+| `<C-s>` | Save file |
+| `<C-q>` | Quit (confirm if modified) |
+| `<C-z>` | Undo |
+| `<C-S-z>` | Redo |
+| `<C-a>` | Select all |
+
+### Navigation / Windows
+
+| Key | Description |
+| --- | --- |
+| `<C-Up>` | Resize window +2 rows |
+| `<C-Down>` | Resize window -2 rows |
+| `<C-Left>` | Resize window -2 cols |
+| `<C-Right>` | Resize window +2 cols |
+| `<C-t>` | Toggle terminal (bottom) |
+| `<C-]>` | Next buffer |
+| `<A-[>` | Previous buffer |
+| `<C-1>`…`<C-9>` | Jump to buffer 1–9 |
+
+### Text / Clipboard
+
+| Key | Description |
+| --- | --- |
+| `<C-v>` | Paste from system clipboard |
+| `<C-S-v>` | Paste before cursor |
+
+### Search / Picker (Snacks)
+
+| Key | Description |
+| --- | --- |
+| `;` | Smart find (files + recent) |
+| `.` | Live grep (project) |
+| `,` | Buffers |
+| `<C-f>` | Fuzzy find in current buffer |
+| `<C-S-f>` | Find in files (project grep, incl. hidden) |
+| `\` | Toggle file explorer |
+| `<C-e>` | Toggle file explorer |
+| `<leader><space>` | Smart Find Files |
+| `<leader>e` | File Explorer |
+| `<leader>ff` | Find Files |
+| `<leader>fg` | Grep (project) |
+| `<leader>fb` | Buffers |
+| `<leader>fc` | Config Files |
+| `<leader>fG` | Git Files |
+| `<leader>fp` | Projects |
+| `<leader>fr` | Recent Files |
+| `<leader>fs` | Document Symbols |
+| `<leader>fS` | Workspace Symbols |
+| `<leader>fd` | Diagnostics |
+| `<leader>fh` | Help Pages |
+| `<leader>fk` | Keymaps |
+| `<leader>fn` | Notifications (picker) |
+| `<leader>sf` | Frecency (cwd) |
+| `<leader>sF` | Frecency (global) |
+| `<leader>sB` | Grep Open Buffers |
+| `<leader>sw` | Word under cursor |
+| `<leader>s"` | Registers |
+| `<leader>s/` | Search History |
+| `<leader>sc` | Command History |
+| `<leader>sC` | Commands |
+| `<leader>sD` | Buffer Diagnostics |
+| `<leader>sj` | Jumps |
+| `<leader>sl` | Location List |
+| `<leader>sm` | Marks |
+| `<leader>sp` | Plugin Spec Search |
+| `<leader>sq` | Quickfix List |
+| `<leader>sR` | Resume Picker |
+| `<leader>su` | Undo History |
+| `<leader>st` | Todo |
+| `<leader>sT` | Todo/Fix/Fixme |
+
+### Quickfix
+
+| Key | Description |
+| --- | --- |
+| `<leader>qg` | Grep to quickfix |
+| `<leader>qd` | Diagnostics to quickfix |
+| `<leader>qq` | Quit |
+| `<leader>qQ` | Quit All |
+
+### UI Toggles (Snacks)
+
+| Key | Description |
+| --- | --- |
+| `<leader>us` | Toggle Spelling |
+| `<leader>uw` | Toggle Wrap |
+| `<leader>uL` | Toggle Relative Number |
+| `<leader>ud` | Toggle Diagnostics |
+| `<leader>ul` | Toggle Line Number |
+| `<leader>uc` | Toggle Conceal |
+| `<leader>uT` | Toggle Treesitter |
+| `<leader>uh` | Toggle Inlay Hints |
+| `<leader>ug` | Toggle Indent |
+| `<leader>uW` | Toggle Word Highlight |
+| `<leader>uP` | Toggle Profiler |
+| `<leader>uC` | Colorschemes |
+| `<leader>uM` | Refresh Mini Map |
+| `<leader>um` | Toggle Mini Map |
+| `<leader>u/` | Clear Search Highlight |
+| `<leader>un` | Dismiss all notifications |
+
+### Notifications
+
+| Key | Description |
+| --- | --- |
+| `<leader>n` | Notification History |
+| `<leader>nf` | Reveal File in Explorer |
+
+### Scratch / Utility
+
+| Key | Description |
+| --- | --- |
+| `<leader>.` | Toggle Scratch Buffer |
+| `<leader>S` | Select Scratch Buffer |
+| `<leader>:` | Command History |
+| `<leader>z` | Zen Mode |
+| `<leader>ch` | Config Health |
+| `<leader>cR` | Rename File (Snacks) |
+| `<C-b>` | Nabla popup (math preview) |
+| `<F7>` | Select Copilot Chat model |
+| `<F8>` | Show code actions |
+| `<leader>ww` | Save |
+| `<leader>wW` | Save All |
+
+### Tabs
+
+| Key | Description |
+| --- | --- |
+| `<leader>tn` | New tab |
+| `<leader>tc` | Close tab |
+| `<leader>to` | Only tab |
+
+### LSP (buffer-local, set on attach)
+
+| Key | Description |
+| --- | --- |
+| `gd` | Go to Definition |
+| `gr` | References |
+| `gI` | Implementation |
+| `K` | Hover |
+| `<leader>rn` | Rename |
+| `<leader>sh` | Signature Help |
+| `<leader>ds` | Document Symbols |
+| `<leader>ws` | Workspace Symbols |
+| `<leader>dl` | Line Diagnostics (float) |
+| `[d` | Prev diagnostic |
+| `]d` | Next diagnostic |
+| `<leader>cl` | LSP Info |
+| `<leader>cs` | Symbols |
+| `gO` | Document Symbol (native) |
+| `gra` | Code Action |
+| `gri` | Implementation (native) |
+| `grn` | Rename (native) |
+| `grr` | References (native) |
+| `grt` | Type Definition |
+| `grx` | CodeLens Run |
+
+### Format
+
+| Key | Description |
+| --- | --- |
+| `<leader>fm` | Format buffer (Conform) |
+
+### Search & Replace (grug-far)
+
+| Key | Description |
+| --- | --- |
+| `<C-h>` | Search/replace in current file |
+| `<leader>sr` | Search and replace |
+| `<leader>rw` | Replace word under cursor |
+| `<leader>rF` | Search and replace (scratch/transient) |
+| `<leader>rr` | Reload init.lua |
+
+### Git (Snacks + Neogit + Diffview)
+
+| Key | Description |
+| --- | --- |
+| `<leader>gg` | Neogit Status |
+| `<leader>gd` | Diffview Open *(shadows snacks git_diff)* |
+| `<leader>gD` | Diffview Close |
+| `<leader>gk` | Git Branches |
+| `<leader>gl` | Git Log |
+| `<leader>gL` | Git Log Line |
+| `<leader>gf` | Git Log File |
+| `<leader>gs` | Git Status (picker) |
+| `<leader>gb` | Git Browse (line/repo) |
+| `<leader>lg` | Lazygit |
+
+### Git — Gitsigns (buffer-local)
+
+| Key | Description |
+| --- | --- |
+| `]c` | Next hunk |
+| `[c` | Prev hunk |
+| `<leader>hs` | Stage hunk |
+| `<leader>hr` | Reset hunk |
+| `<leader>hS` | Stage buffer |
+| `<leader>hu` | Undo stage hunk |
+| `<leader>hR` | Reset buffer |
+| `<leader>hp` | Preview hunk inline |
+| `<leader>hb` | Blame line (full) |
+| `<leader>hd` | Diff this |
+| `<leader>hD` | Diff this ~ |
+| `<leader>tb` | Toggle line blame |
+| `<leader>td` | Toggle show deleted |
+
+### Molten / Notebooks
+
+| Key | Description |
+| --- | --- |
+| `<leader>mi` | Molten Init (select kernel) |
+| `<leader>ml` | Evaluate current line |
+| `<leader>mo` | Show/enter output window |
+| `<leader>mh` | Hide output window |
+| `<leader>md` | Delete current cell output |
+| `<leader>mr` | Re-evaluate cell |
+| `<leader>ms` | Save Molten state |
+| `<leader>mL` | Load Molten state |
+| `<leader>mn` | Notebook mode |
+| `<leader>mR` | Restart kernel (clear outputs) |
+| `<leader>mI` | Interrupt kernel |
+| `<leader>mm` | Run current `# %%` cell |
+| `<F5>` | Run current `# %%` cell (Molten) |
+| `<leader>mp` | Toggle Markdown render |
+
+### Quarto (ft: quarto/qmd)
+
+| Key | Description |
+| --- | --- |
+| `<leader>qa` | Activate LSP |
+| `<leader>qp` | Preview |
+| `<leader>qP` | Preview no watch |
+| `<leader>qq` | Close preview |
+| `<leader>qe` | Render |
+| `<leader>qE` | Update preview |
+| `<leader>qr` | Run cell |
+| `<leader>qR` | Run above |
+| `<leader>ql` | Run line |
+| `<leader>qal` | Run all |
+| `<leader>qn` | Next Python code block |
+| `<leader>qN` | Previous Python code block |
+| `<leader>q]` | Next code block |
+| `<leader>q[` | Previous code block |
+| `<C-CR>` | Run cell (Quarto) |
+| `<F5>` | Run all cells (Quarto) *(overrides Molten F5 in .qmd)* |
+
+### Python Runner (workflows.lua)
+
+| Key | Description |
+| --- | --- |
+| `<leader>py` | Run Python file |
+| `<leader>pa` | Run with args |
+| `<leader>pi` | Python interactive |
+| `<leader>pt` | Toggle Python terminal |
+| `<leader>pr` | Repeat last run |
+| `<leader>ph` | Run from history |
+
+### Yank / Clipboard
+
+| Key | Description |
+| --- | --- |
+| `<leader>y` | Yank to system clipboard (OSC52) |
+
+### Diagnostics / Trouble
+
+| Key | Description |
+| --- | --- |
+| `<leader>xx` | Diagnostics (Trouble) |
+| `<leader>xX` | Buffer Diagnostics (Trouble) |
+| `<leader>xt` | Todo (Trouble) |
+| `<leader>xT` | Todo/Fix/Fixme (Trouble) |
+| `<leader>xL` | Location List (Trouble) |
+| `<leader>xQ` | Quickfix List (Trouble) |
+
+### Navigation (jumps, lists)
+
+| Key | Description |
+| --- | --- |
+| `]b` | Next buffer |
+| `[b` | Prev buffer |
+| `]q` | Next quickfix |
+| `[q` | Prev quickfix |
+| `]l` | Next location list |
+| `[l` | Prev location list |
+| `]t` | Next todo comment |
+| `[t` | Prev todo comment |
+| `]d` | Next diagnostic |
+| `[d` | Prev diagnostic |
+| `]c` | Next git hunk |
+| `[c` | Prev git hunk |
+| `-` | Open parent directory (Oil) |
+| `s` | Flash Jump |
+| `S` | Flash Treesitter |
+
+### Comments / Operators
+
+| Key | Description |
+| --- | --- |
+| `gc` | Toggle comment |
+| `gcc` | Toggle comment line |
+| `<leader>/` | Comment line |
+
+### Treesitter text objects (normal)
+
+| Key | Description |
+| --- | --- |
+| `]f` | Next function start |
+| `[f` | Prev function start |
+| `]c` | Next class start *(also: next git hunk — context-dependent)* |
+| `[c` | Prev class start *(also: prev git hunk)* |
+| `]a` | Next parameter |
+| `[a` | Prev parameter |
+| `]l` | Next loop |
+| `[l` | Prev loop |
+| `]o` | Next conditional |
+| `[o` | Prev conditional |
+| `<leader>a]` | Swap next parameter |
+| `<leader>a[` | Swap prev parameter |
+| `<leader>f]` | Swap next function |
+| `<leader>f[` | Swap prev function |
+| `<leader>df` | Peek function definition |
+| `<leader>dF` | Peek class definition |
+
+### Fidget / Progress
+
+| Key | Description |
+| --- | --- |
+| `<leader>lh` | Fidget History |
+| `<leader>lH` | Clear Fidget History |
+| `<leader>lc` | Clear Active Progress |
+| `<leader>lp` | Toggle LSP Progress HUD |
+
+---
 
 ## Insert
 
-| Key | Description | Scope | Action |
-| --- | --- | --- | --- |
-| `<C-A>` | Select all | global | `<Esc>ggVG` |
-| `<C-F>` | Fuzzy find in current buffer | global | `lua/callback` |
-| `<C-Q>` | Quit (confirm if modified) | global | `lua/callback` |
-| `<C-S>` | Save file | global | `<Cmd>update<CR>` |
-| `<C-U>` | :help i_CTRL-U-default | global | `<C-G>u<C-U>` |
-| `<C-W>` | :help i_CTRL-W-default | global | `<C-G>u<C-W>` |
-| `<Left>` | Smart left – jump to previous line if at start | global | `lua/callback` |
-| `<Right>` | Smart right – jump to next line if at end | global | `lua/callback` |
-| `<S-Tab>` | vim.snippet.jump if active, otherwise <S-Tab> | global | `lua/callback` |
-| `<Tab>` | Copilot accept / next completion / tab | global | `lua/callback` |
+| Key | Description |
+| --- | --- |
+| `<C-s>` | Save file |
+| `<C-q>` | Quit (confirm if modified) |
+| `<C-t>` | Toggle terminal |
+| `<C-a>` | Select all |
+| `<C-z>` | Undo |
+| `<C-S-z>` | Redo |
+| `<C-v>` | Paste from system clipboard |
+| `<C-S-f>` | Find in files |
+| `<Left>` | Smart left (wrap to prev line end) |
+| `<Right>` | Smart right (wrap to next line start) |
+| `<Tab>` | Copilot accept / next completion |
+| `<S-Tab>` | Jump back in snippet |
+
+---
 
 ## Visual
 
-| Key | Description | Scope | Action |
-| --- | --- | --- | --- |
-| `#` | :help v_#-default | global | `lua/callback` |
-| `*` | :help v_star-default | global | `lua/callback` |
-| `<C-A>` | Select all | global | `<Esc>ggVG` |
-| `<C-Q>` | Quit (confirm if modified) | global | `lua/callback` |
-| `<C-S>` | Save file | global | `<Cmd>update<CR>` |
-| `@` | :help v_@-default | global | `mode() ==# 'V' ? ':normal! @'.getcharstr().'<CR>' : '@'` |
-| `Q` | :help v_Q-default | global | `mode() ==# 'V' ? ':normal! @<C-R>=reg_recorded()<CR><CR>' : 'Q'` |
-| `an` | vim.lsp.buf.selection_range(vim.v.count1) | global | `lua/callback` |
-| `gc` | Toggle comment | global | `lua/callback` |
-| `gra` | vim.lsp.buf.code_action() | global | `lua/callback` |
-| `gx` | Opens filepath or URI under cursor with the system handler (file explorer, web browser, …) | global | `lua/callback` |
-| `in` | vim.lsp.buf.selection_range(-vim.v.count1) | global | `lua/callback` |
+| Key | Description |
+| --- | --- |
+| `<C-c>` | Copy to system clipboard |
+| `<C-v>` | Paste (replace selection, no yank) |
+| `<C-s>` | Save |
+| `<C-a>` | Select all |
+| `<C-S-f>` | Find in files |
+| `<Tab>` | Indent |
+| `<S-Tab>` | Dedent |
+| `<leader>sw` | Grep selection |
+| `<leader>sr` | Search and replace selection |
+| `<leader>mc` | Evaluate visual selection (Molten) |
+| `<leader>jv` | Run visual as cell |
+| `<leader>y` | Yank to system clipboard |
+| `,qv` | Quarto: Run selection |
+| `<leader>hs` | Stage selection (Gitsigns) |
+| `<leader>hr` | Reset selection (Gitsigns) |
+| `s` | Flash Jump |
+| `S` | Flash Treesitter |
+| `R` | Treesitter Search |
+| `gc` | Toggle comment |
 
-## Visual (Select)
-
-| Key | Description | Scope | Action |
-| --- | --- | --- | --- |
-| `#` | :help v_#-default | global | `lua/callback` |
-| `*` | :help v_star-default | global | `lua/callback` |
-| `<C-A>` | Select all | global | `<Esc>ggVG` |
-| `<C-Q>` | Quit (confirm if modified) | global | `lua/callback` |
-| `<C-S>` | Save file | global | `<Cmd>update<CR>` |
-| `@` | :help v_@-default | global | `mode() ==# 'V' ? ':normal! @'.getcharstr().'<CR>' : '@'` |
-| `Q` | :help v_Q-default | global | `mode() ==# 'V' ? ':normal! @<C-R>=reg_recorded()<CR><CR>' : 'Q'` |
-| `an` | vim.lsp.buf.selection_range(vim.v.count1) | global | `lua/callback` |
-| `gc` | Toggle comment | global | `lua/callback` |
-| `gra` | vim.lsp.buf.code_action() | global | `lua/callback` |
-| `gx` | Opens filepath or URI under cursor with the system handler (file explorer, web browser, …) | global | `lua/callback` |
-| `in` | vim.lsp.buf.selection_range(-vim.v.count1) | global | `lua/callback` |
+---
 
 ## Operator-pending
 
-| Key | Description | Scope | Action |
-| --- | --- | --- | --- |
-| `an` | vim.lsp.buf.selection_range(vim.v.count1) | global | `lua/callback` |
-| `gc` | Comment textobject | global | `lua/callback` |
-| `in` | vim.lsp.buf.selection_range(-vim.v.count1) | global | `lua/callback` |
+| Key | Description |
+| --- | --- |
+| `s` | Flash Jump |
+| `S` | Flash Treesitter |
+| `R` | Treesitter Search |
+| `r` | Remote Flash |
+| `gc` | Comment textobject |
+| `af` / `if` | Function outer/inner |
+| `ac` / `ic` | Class outer/inner |
+| `aa` / `ia` | Parameter outer/inner |
+| `al` / `il` | Loop outer/inner |
+| `ao` / `io` | Conditional outer/inner |
+| `ab` / `ib` | Block outer/inner |
+| `am` / `a/` | Comment outer |
+| `as` | Scope |
+| `ih` | Gitsigns hunk (text object) |
 
+---
+
+## Terminal
+
+| Key | Description |
+| --- | --- |
+| `<C-t>` | Toggle terminal |
+
+---
+
+## Command
+
+| Key | Description |
+| --- | --- |
+| `<C-s>` | Toggle Flash (cmdline) |

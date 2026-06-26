@@ -14,8 +14,6 @@ require("lazy").setup({
     }, {
         import = "plugins.terminal"
     }, {
-        import = "plugins.misc"
-    }, {
         import = "plugins"
     }},
     defaults = {

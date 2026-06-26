@@ -1,7 +1,7 @@
 return { -- 1) Molten
 {
     "benlubas/molten-nvim",
-    dependencies = {"3rd/image.nvim"},
+    dependencies = {"folke/snacks.nvim"},
     build = ":UpdateRemotePlugins",
     -- Remote plugins register their commands via rplugin.vim at startup.
     -- Do NOT use `cmd` here — it creates lazy stubs that shadow the real
@@ -14,8 +14,8 @@ return { -- 1) Molten
         vim.g.molten_enter_output_behavior = "open_then_enter"
 
         -- Output window appearance
-        vim.g.molten_output_win_max_height = 0.6 -- up to 60 % of screen height
-        vim.g.molten_output_win_max_width = 0.9 -- up to 90 % of screen width
+        vim.g.molten_output_win_max_height = 20
+        vim.g.molten_output_win_max_width = 100
         vim.g.molten_output_win_border = "rounded"
         vim.g.molten_output_win_style = "minimal" -- cleaner float (no statusline, etc.)
         vim.g.molten_output_win_cover_gutter = false
@@ -30,13 +30,47 @@ return { -- 1) Molten
         vim.g.molten_wrap_output = true
 
         -- Images
-        vim.g.molten_image_provider = "image.nvim"
+        vim.g.molten_image_provider = "snacks.nvim"
         vim.g.molten_auto_image_popup = true
         vim.g.molten_image_location = "both" -- show inline AND in popup
+        vim.g.molten_save_path = vim.fn.stdpath("data") .. "/molten"
 
         -- Performance
         vim.g.molten_tick_rate = 150
         vim.g.molten_copy_output = false
+    end,
+    config = function()
+        local function state_path()
+            local file = vim.api.nvim_buf_get_name(0)
+            local name = file ~= "" and vim.fn.fnamemodify(file, ":t:r") or "scratch"
+            local safe = name:gsub("[^%w_.-]", "_")
+            vim.fn.mkdir(vim.g.molten_save_path, "p")
+            return vim.g.molten_save_path .. "/" .. safe .. ".json"
+        end
+
+        vim.api.nvim_create_user_command("NotebookMode", function()
+            vim.opt_local.spell = false
+            vim.opt_local.conceallevel = 0
+            pcall(vim.cmd, "RenderMarkdown buf_disable")
+            pcall(function()
+                require("quarto").activate()
+            end)
+            vim.notify("Notebook mode ready. Use :MoltenInit to pick a kernel.", vim.log.levels.INFO)
+        end, {
+            desc = "Prepare current buffer for notebook work"
+        })
+
+        vim.api.nvim_create_user_command("MoltenStateSave", function()
+            vim.cmd("MoltenSave " .. vim.fn.fnameescape(state_path()))
+        end, {
+            desc = "Save Molten state for this buffer"
+        })
+
+        vim.api.nvim_create_user_command("MoltenStateLoad", function()
+            vim.cmd("MoltenLoad " .. vim.fn.fnameescape(state_path()))
+        end, {
+            desc = "Load Molten state for this buffer"
+        })
     end,
     keys = {{
         "<leader>mi",
@@ -64,17 +98,21 @@ return { -- 1) Molten
         desc = "Re-evaluate cell"
     }, {
         "<leader>mc",
-        "<cmd>MoltenEvaluateVisual<CR>",
+        ":<C-u>MoltenEvaluateVisual<CR>gv",
         mode = "v",
         desc = "Evaluate visual selection"
     }, {
         "<leader>ms",
-        "<cmd>MoltenSave<CR>",
-        desc = "Save notebook state"
+        "<cmd>MoltenStateSave<CR>",
+        desc = "Save Molten state"
     }, {
         "<leader>mL",
-        "<cmd>MoltenLoad<CR>",
-        desc = "Load notebook state"
+        "<cmd>MoltenStateLoad<CR>",
+        desc = "Load Molten state"
+    }, {
+        "<leader>mn",
+        "<cmd>NotebookMode<CR>",
+        desc = "Notebook mode"
     }, {
         "<leader>mR",
         "<cmd>MoltenRestart!<CR>",
@@ -86,10 +124,6 @@ return { -- 1) Molten
     }, {
         "<leader>mm",
         function()
-            if vim.fn.exists("*MoltenEvaluateRange") == 0 then
-                vim.notify("Molten not initialized — run <leader>mi first", vim.log.levels.WARN)
-                return
-            end
             local start = vim.fn.search("^# %%", "bcnW")
             local stop = vim.fn.search("^# %%", "nW")
             if start == 0 then
@@ -100,16 +134,15 @@ return { -- 1) Molten
             else
                 stop = stop - 1
             end
-            vim.fn.MoltenEvaluateRange(start, stop)
+            local ok, err = pcall(vim.fn.MoltenEvaluateRange, start, stop)
+            if not ok then
+                vim.notify("Molten range evaluation failed: " .. tostring(err), vim.log.levels.ERROR)
+            end
         end,
         desc = "Run current %% cell"
     }, {
         "<F5>",
         function()
-            if vim.fn.exists("*MoltenEvaluateRange") == 0 then
-                vim.notify("Molten not initialized — run <leader>mi first", vim.log.levels.WARN)
-                return
-            end
             local start = vim.fn.search("^# %%", "bcnW")
             local stop = vim.fn.search("^# %%", "nW")
             if start == 0 then
@@ -120,42 +153,11 @@ return { -- 1) Molten
             else
                 stop = stop - 1
             end
-            vim.fn.MoltenEvaluateRange(start, stop)
+            local ok, err = pcall(vim.fn.MoltenEvaluateRange, start, stop)
+            if not ok then
+                vim.notify("Molten range evaluation failed: " .. tostring(err), vim.log.levels.ERROR)
+            end
         end,
         desc = "Run current %% cell (F5)"
     }}
-}, -- 2) image.nvim
-{
-    "3rd/image.nvim",
-    lazy = true,
-    opts = {
-        backend = "kitty", -- best quality; use "ueberzugpp" if not on kitty
-        processor = "magick_rock", -- requires: luarocks --local install magick
-        integrations = {
-            markdown = {
-                enabled = true,
-                clear_in_insert_mode = false,
-                download_remote_images = true,
-                only_render_image_at_cursor = true, -- less visual noise
-                filetypes = {"markdown", "quarto", "vimwiki", "python"}
-            },
-            neorg = {
-                enabled = false
-            },
-            typst = {
-                enabled = false
-            }
-        },
-        -- Generous limits so plots aren't clipped
-        max_width = nil, -- nil = no limit
-        max_height = nil,
-        max_width_window_percentage = 80,
-        max_height_window_percentage = 60,
-        -- Don't clear images when Neovim loses focus (flicker reduction)
-        window_overlap_clear_enabled = true,
-        window_overlap_clear_ft_ignore = {"cmp_menu", "cmp_docs", ""},
-        editor_only_render_when_focused = true, -- save GPU when not focused
-        tmux_show_only_in_active_window = true,
-        hijack_file_patterns = {"*.png", "*.jpg", "*.jpeg", "*.gif", "*.webp", "*.svg"}
-    }
 }}

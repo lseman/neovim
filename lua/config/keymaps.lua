@@ -2,11 +2,23 @@
 -- Simplified – no custom nmap/imap/vmap helpers
 -- All mappings use vim.keymap.set directly
 local map = vim.keymap.set
-local integrations = require("config.integrations")
 local default_opts = {
     noremap = true,
     silent = true
 }
+
+local function toggle_explorer()
+    local open = Snacks.picker.get({
+        source = "explorer"
+    })
+    if #open > 0 then
+        for _, picker in ipairs(open) do
+            picker:close()
+        end
+        return
+    end
+    Snacks.explorer()
+end
 
 -- ── 1. Core ─────────────────────────────────────────────────────────────
 
@@ -44,9 +56,9 @@ end, vim.tbl_extend("force", default_opts, {
 
 -- Undo / Redo
 map("n", "<C-z>", "u", default_opts)
-map("n", "<C-y>", "<C-r>", default_opts)
+map("n", "<C-S-z>", "<C-r>", default_opts)
 map("i", "<C-z>", "<C-o>u", default_opts)
-map("i", "<C-y>", "<C-o><C-r>", default_opts)
+map("i", "<C-S-z>", "<C-o><C-r>", default_opts)
 
 -- ── 2. Navigation ───────────────────────────────────────────────────────
 
@@ -59,6 +71,25 @@ map("n", "<C-Up>", "<cmd>resize +2<CR>", default_opts)
 map("n", "<C-Down>", "<cmd>resize -2<CR>", default_opts)
 map("n", "<C-Left>", "<cmd>vertical resize -2<CR>", default_opts)
 map("n", "<C-Right>", "<cmd>vertical resize +2<CR>", default_opts)
+
+map({"n", "i", "t"}, "<C-t>", function()
+    if vim.api.nvim_get_mode().mode:find("i") then
+        vim.cmd("stopinsert")
+    end
+
+    vim.schedule(function()
+        Snacks.terminal.toggle(nil, {
+            cwd = vim.fn.getcwd(),
+            win = {
+                position = "bottom",
+                height = 0.32
+            },
+            interactive = true
+        })
+    end)
+end, vim.tbl_extend("force", default_opts, {
+    desc = "Toggle terminal"
+}))
 
 -- ── Smart arrows in insert mode (still included) ───────────────────────
 
@@ -87,7 +118,7 @@ map("i", "<Right>", smart_right, {
 -- ── 3. Buffers & Tabs ──────────────────────────────────────────────────
 
 map("n", "<C-]>", "<cmd>bnext<CR>", default_opts)
-map("n", "<C-[>", "<cmd>bprevious<CR>", default_opts)
+map("n", "<A-[>", "<cmd>bprevious<CR>", default_opts)
 
 -- Buffer 1–9
 for i = 1, 9 do
@@ -126,42 +157,81 @@ map({"n", "v", "i"}, "<C-a>", "<Esc>ggVG", vim.tbl_extend("force", default_opts,
 map("v", "<Tab>", ">gv", default_opts)
 map("v", "<S-Tab>", "<gv", default_opts)
 
--- ── 5. Search / Picker (Snacks-first, Telescope fallback) ─────────────────
+-- ── 5. Search / Picker (Snacks) ────────────────────────────────────────────
 
-map("n", ";", integrations.picker("files", "find_files"), vim.tbl_extend("force", default_opts, {
-    desc = "Find files"
+map("n", ";", function()
+    Snacks.picker.smart()
+end, vim.tbl_extend("force", default_opts, {
+    desc = "Smart find"
 }))
 
-map("n", ".", integrations.picker("grep", "live_grep"), vim.tbl_extend("force", default_opts, {
+map("n", ".", function()
+    Snacks.picker.grep()
+end, vim.tbl_extend("force", default_opts, {
     desc = "Live grep"
 }))
 
-map("n", ",", integrations.picker("buffers", "buffers"), vim.tbl_extend("force", default_opts, {
+map("n", ",", function()
+    Snacks.picker.buffers()
+end, vim.tbl_extend("force", default_opts, {
     desc = "Buffers"
 }))
 
-map("n", "\\", function()
-    if not integrations.toggle_explorer() then
-        vim.notify("No explorer backend available", vim.log.levels.WARN)
+map({"n", "v", "i"}, "<C-S-f>", function()
+    local mode = vim.api.nvim_get_mode().mode
+    if mode:find("i") then
+        vim.cmd("stopinsert")
+    elseif mode:find("[vV]") then
+        vim.cmd("normal! <Esc>")
     end
+
+    vim.schedule(function()
+        Snacks.picker.grep({
+            hidden = true,
+            ignored = false,
+            exclude = {".git"}
+        })
+    end)
+end, vim.tbl_extend("force", default_opts, {
+    desc = "Find in files"
+}))
+
+map("n", "\\", function()
+    toggle_explorer()
 end, vim.tbl_extend("force", default_opts, {
     desc = "File explorer"
 }))
 
 map("n", "<C-e>", function()
-    if not integrations.toggle_explorer() then
-        vim.notify("No explorer backend available", vim.log.levels.WARN)
-    end
+    toggle_explorer()
 end, vim.tbl_extend("force", default_opts, {
     desc = "Toggle Explorer"
 }))
 
 map("n", "<C-f>", function()
-    if not integrations.open_current_buffer_picker() then
-        vim.notify("No in-buffer finder available", vim.log.levels.WARN)
-    end
+    Snacks.picker.lines()
 end, vim.tbl_extend("force", default_opts, {
     desc = "Fuzzy find in current buffer"
+}))
+
+map("n", "<leader>qg", function()
+    Snacks.picker.grep({
+        hidden = true,
+        ignored = false,
+        exclude = {".git"},
+        title = "Grep -> quickfix with <C-q>"
+    })
+end, vim.tbl_extend("force", default_opts, {
+    desc = "Grep to quickfix"
+}))
+
+map("n", "<leader>qd", function()
+    vim.diagnostic.setqflist({
+        open = true,
+        title = "Diagnostics"
+    })
+end, vim.tbl_extend("force", default_opts, {
+    desc = "Diagnostics to quickfix"
 }))
 
 -- ── 6. Plugins & Utilities ─────────────────────────────────────────────
@@ -180,64 +250,26 @@ end, vim.tbl_extend("force", default_opts, {
     desc = "Nabla popup"
 }))
 
-map("n", "<C-h>", function()
-    require("config.custom").find_and_replace()
-end, vim.tbl_extend("force", default_opts, {
-    desc = "Find and Replace"
-}))
-
 map("n", "<F7>", function()
-    local ft = vim.bo.filetype
-    local build_cmd = ({
-        cpp = "make -j$(nproc)",
-        rust = "cargo build",
-        go = "go build",
-        typescript = "npm run build",
-        javascript = "npm run build"
-    })[ft]
-
-    if build_cmd then
-        vim.cmd("write")
-        vim.cmd("split | terminal " .. build_cmd)
-        vim.cmd("startinsert")
+    if vim.fn.exists(":CopilotChatModels") == 2 then
+        vim.cmd("CopilotChatModels")
     else
-        vim.notify("No build command for " .. ft, vim.log.levels.WARN)
+        vim.notify("CopilotChatModels command is not available", vim.log.levels.WARN)
     end
 end, vim.tbl_extend("force", default_opts, {
-    desc = "Smart build"
+    desc = "Select Copilot Chat model"
 }))
 
--- Copilot / completion Tab (after blink.cmp is loaded)
-vim.g.copilot_no_tab_map = true
+map("n", "<F8>", function()
+    local bufnr = 0
+    local line = vim.api.nvim_win_get_cursor(0)[1] - 1
+    local diagnostics = vim.diagnostic.get(bufnr, { lnum = line })
+    vim.lsp.buf.code_action({
+        context = {
+            diagnostics = diagnostics
+        }
+    })
+end, vim.tbl_extend("force", default_opts, {
+    desc = "Show code actions"
+}))
 
-map("i", "<Tab>", function()
-    local ok, suggestion = pcall(require, "copilot.suggestion")
-    if ok and suggestion and suggestion.is_visible() then
-        suggestion.accept()
-        return ""
-    end
-
-    -- Fallback to blink.cmp behavior or next completion
-    if vim.fn.pumvisible() == 1 then
-        return "<C-n>"
-    end
-
-    return "<Tab>"
-end, {
-    expr = true,
-    noremap = true,
-    silent = true,
-    desc = "Copilot accept / next completion / tab"
-})
-
--- Add this to your keymaps.lua (e.g. in section 6. Plugins & Utilities)
-map("n", "<leader>rr", function()
-    vim.cmd("source " .. vim.fn.fnameescape(vim.env.MYVIMRC))
-    vim.notify("Core config reloaded", vim.log.levels.INFO)
-end, {
-    desc = "Reload init.lua"
-})
-
-vim.keymap.set("n", "-", "<CMD>Oil<CR>", {
-    desc = "Open parent directory"
-})

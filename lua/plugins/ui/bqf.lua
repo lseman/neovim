@@ -1,0 +1,45 @@
+return {
+    "kevinhwang91/nvim-bqf",
+    ft = "qf",
+    opts = {
+        auto_enable = true,
+        auto_resize_height = true,
+        preview = {
+            auto_preview = false,
+            border = "rounded",
+            show_title = false,
+            show_scroll_bar = false,
+            delay_syntax = 80,
+            win_height = 14,
+            win_vheight = 14,
+            wrap = false
+        },
+        func_map = {
+            open = "<CR>",
+            openc = "o",
+            split = "<C-s>",
+            vsplit = "<C-v>",
+            tabdrop = "<C-t>",
+            ptogglemode = "zp",
+            pscrollup = "<C-u>",
+            pscrolldown = "<C-d>",
+            prevfile = "[q",
+            nextfile = "]q",
+            prevhist = "[Q",
+            nexthist = "]Q",
+            filter = "zn",
+            filterr = "zN",
+            fzffilter = "zf"
+        },
+        filter = {
+            fzf = {
+                action_for = {
+                    ["ctrl-s"] = "split",
+                    ["ctrl-v"] = "vsplit",
+                    ["ctrl-t"] = "tabdrop"
+                },
+                extra_opts = {"--bind", "ctrl-o:toggle-all"}
+            }
+        }
+    }
+}

@@ -59,7 +59,9 @@ local function apply_query_capture_compat()
     }
 
     local function get_parser_from_markdown_info_string(injection_alias)
-        local match = vim.filetype.match({filename = "a." .. injection_alias})
+        local match = vim.filetype.match({
+            filename = "a." .. injection_alias
+        })
         return match or non_filetype_match_injection_language_aliases[injection_alias] or injection_alias
     end
 
@@ -75,7 +77,9 @@ local function apply_query_capture_compat()
         end
 
         return false
-    end, {force = true})
+    end, {
+        force = true
+    })
 
     query.add_predicate("is?", function(match, _pattern, bufnr, pred)
         if not valid_args("is?", pred, 2) then
@@ -92,7 +96,9 @@ local function apply_query_capture_compat()
 
         local _, _, kind = locals.find_definition(node, bufnr)
         return vim.tbl_contains(types, kind)
-    end, {force = true})
+    end, {
+        force = true
+    })
 
     query.add_predicate("kind-eq?", function(match, _pattern, _bufnr, pred)
         if not valid_args(pred[1], pred, 2) then
@@ -107,7 +113,9 @@ local function apply_query_capture_compat()
         end
 
         return vim.tbl_contains(types, node:type())
-    end, {force = true})
+    end, {
+        force = true
+    })
 
     query.add_directive("set-lang-from-mimetype!", function(match, _, bufnr, pred, metadata)
         local capture_id = pred[2]
@@ -124,7 +132,9 @@ local function apply_query_capture_compat()
             local parts = vim.split(type_attr_value, "/", {})
             metadata["injection.language"] = parts[#parts]
         end
-    end, {force = true})
+    end, {
+        force = true
+    })
 
     query.add_directive("set-lang-from-info-string!", function(match, _, bufnr, pred, metadata)
         local capture_id = pred[2]
@@ -135,7 +145,9 @@ local function apply_query_capture_compat()
 
         local injection_alias = vim.treesitter.get_node_text(node, bufnr):lower()
         metadata["injection.language"] = get_parser_from_markdown_info_string(injection_alias)
-    end, {force = true})
+    end, {
+        force = true
+    })
 
     query.add_directive("downcase!", function(match, _, bufnr, pred, metadata)
         local capture_id = pred[2]
@@ -145,10 +157,14 @@ local function apply_query_capture_compat()
         end
 
         local capture_metadata = metadata[capture_id]
-        local text = vim.treesitter.get_node_text(node, bufnr, {metadata = capture_metadata}) or ""
+        local text = vim.treesitter.get_node_text(node, bufnr, {
+            metadata = capture_metadata
+        }) or ""
         metadata[capture_id] = capture_metadata or {}
         metadata[capture_id].text = string.lower(text)
-    end, {force = true})
+    end, {
+        force = true
+    })
 end
 
 return {
@@ -190,7 +206,7 @@ return {
         -- "vim" intentionally omitted: Neovim 0.12+ ships its own vim parser that matches
         -- its bundled queries. nvim-treesitter's vim.so is older and causes query errors.
         "c", "cpp", "lua", "vimdoc", "query", -- Docs & markup
-        "markdown", "markdown_inline", -- Web / frontend
+        "markdown", "markdown_inline", "latex", -- Web / frontend
         "javascript", "typescript", "tsx", "html", "css", -- Scripting & data
         "bash", "regex", "json", "yaml", "toml", -- Build / config
         "cmake", "make", "dockerfile", "git_config", "git_rebase", "gitcommit", "gitignore",
@@ -199,7 +215,9 @@ return {
         "python"},
 
         sync_install = false,
-        auto_install = true,
+        -- Disable auto-install to avoid build failures when the local tree-sitter CLI
+        -- is incompatible with the parser generator ABI.
+        auto_install = false,
         ignore_install = {},
 
         highlight = {
@@ -213,8 +231,7 @@ return {
 
                 -- UI / special buffers
                 local ft = vim.bo[buf].filetype
-                local excluded = {"TelescopePrompt", "snacks_picker_list", "lazy", "mason", "alpha",
-                                  "dashboard"}
+                local excluded = {"TelescopePrompt", "snacks_picker_list", "lazy", "mason", "alpha", "dashboard"}
                 if vim.tbl_contains(excluded, ft) then
                     return true
                 end
@@ -244,51 +261,76 @@ return {
                 set_jumps = true,
                 goto_next_start = {
                     ["]f"] = "@function.outer",
+                    ["]F"] = "@function.outer",
                     ["]c"] = "@class.outer",
+                    ["]C"] = "@class.outer",
                     ["]a"] = "@parameter.inner",
+                    ["]A"] = "@parameter.outer",
                     ["]l"] = "@loop.outer",
+                    ["]L"] = "@loop.outer",
+                    ["]o"] = "@conditional.outer",
+                    ["]O"] = "@conditional.outer",
                     ["]s"] = "@statement.outer",
-                    ["]z"] = "@fold",
-                    ["]o"] = "@conditional.outer" -- added
+                    ["]S"] = "@statement.outer",
+                    ["]z"] = "@fold"
                 },
                 goto_next_end = {
-                    ["]F"] = "@function.outer",
-                    ["]C"] = "@class.outer"
+                    ["]f"] = "@function.outer",
+                    ["]c"] = "@class.outer"
                 },
                 goto_previous_start = {
                     ["[f"] = "@function.outer",
-                    ["[c"] = "@class.outer"
+                    ["[F"] = "@function.outer",
+                    ["[c"] = "@class.outer",
+                    ["[C"] = "@class.outer",
+                    ["[a"] = "@parameter.inner",
+                    ["[A"] = "@parameter.outer",
+                    ["[l"] = "@loop.outer",
+                    ["[L"] = "@loop.outer",
+                    ["[o"] = "@conditional.outer",
+                    ["[O"] = "@conditional.outer",
+                    ["[s"] = "@statement.outer",
+                    ["[S"] = "@statement.outer"
                 },
                 goto_previous_end = {
-                    ["[F"] = "@function.outer",
-                    ["[C"] = "@class.outer"
+                    ["[f"] = "@function.outer",
+                    ["[c"] = "@class.outer"
                 }
             },
 
             select = {
                 enable = true,
                 lookahead = true,
+                include_surrounding_whitespace = false,
                 keymaps = {
+                    -- Functions & calls
                     ["af"] = "@function.outer",
                     ["if"] = "@function.inner",
+                    ["aF"] = "@call.outer",
+                    ["iF"] = "@call.inner",
+                    -- Classes
                     ["ac"] = "@class.outer",
                     ["ic"] = "@class.inner",
+                    -- Parameters
                     ["aa"] = "@parameter.outer",
                     ["ia"] = "@parameter.inner",
+                    -- Loops & conditionals
                     ["al"] = "@loop.outer",
                     ["il"] = "@loop.inner",
+                    ["ao"] = "@conditional.outer",
+                    ["io"] = "@conditional.inner",
+                    -- Blocks
                     ["ab"] = "@block.outer",
                     ["ib"] = "@block.inner",
+                    -- Comments
+                    ["am"] = "@comment.outer",
+                    ["a/"] = "@comment.outer",
+                    -- Scope
                     ["as"] = {
                         query = "@scope",
                         query_group = "locals",
                         desc = "Select scope"
-                    },
-                    ["am"] = "@comment.outer",
-                    ["aC"] = "@call.outer",
-                    ["iC"] = "@call.inner",
-                    ["ao"] = "@conditional.outer", -- added
-                    ["io"] = "@conditional.inner"
+                    }
                 },
                 selection_modes = {
                     ["@parameter.outer"] = "v",
@@ -324,18 +366,5 @@ return {
     config = function(_, opts)
         apply_query_capture_compat()
         require("nvim-treesitter.configs").setup(opts)
-
-        -- Custom highlight links (if still needed; upstream improved a lot)
-        vim.api.nvim_set_hl(0, "TSFunctionCall", {
-            link = "Function"
-        })
-        vim.api.nvim_set_hl(0, "TSConstructor", {
-            link = "Constructor"
-        }) -- or link to Type/Structure
-
-        -- Fold settings are owned by config/options.lua (foldmethod/foldexpr/foldlevel/foldenable).
-
-        -- Optional: register extra filetypes if needed
-        -- vim.treesitter.language.register("typescript", "typescript.tsx")
     end
 }
