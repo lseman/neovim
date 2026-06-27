@@ -2,7 +2,7 @@ return {
   "mfussenegger/nvim-lint",
   event = { "BufReadPost", "BufWritePost", "InsertLeave" },
   config = function()
-    local lint = require("lint")
+    local lint = require "lint"
     local uv = vim.uv
 
     -- Linters per filetype
@@ -78,16 +78,13 @@ return {
     end
 
     -- Auto-trigger linting on these events
-    vim.api.nvim_create_autocmd(
-      { "BufReadPost", "BufWritePost", "InsertLeave" },
-      {
-        group = vim.api.nvim_create_augroup("nvim-lint-auto", { clear = true }),
-        callback = function(args)
-          debounce_lint(args.buf)
-        end,
-        desc = "Debounced lint on buffer events",
-      }
-    )
+    vim.api.nvim_create_autocmd({ "BufReadPost", "BufWritePost", "InsertLeave" }, {
+      group = vim.api.nvim_create_augroup("nvim-lint-auto", { clear = true }),
+      callback = function(args)
+        debounce_lint(args.buf)
+      end,
+      desc = "Debounced lint on buffer events",
+    })
 
     -- Cleanup timer when buffer is deleted
     vim.api.nvim_create_autocmd("BufDelete", {

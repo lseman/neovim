@@ -8,15 +8,15 @@ return {
   event = "VeryLazy",
 
   config = function()
-    local harpoon = require("harpoon")
+    local harpoon = require "harpoon"
     local map = vim.keymap.set
     local opts = { noremap = true, silent = true }
 
     -- Keep a single Harpoon list per working directory.
     harpoon:setup({
       settings = {
-        save_on_toggle    = true,
-        sync_on_ui_close  = true,
+        save_on_toggle = true,
+        sync_on_ui_close = true,
         key = function()
           return vim.uv.cwd()
         end,
@@ -73,10 +73,12 @@ return {
     -- map("n", "<C-l>", function() list:select(4) end, vim.tbl_extend("force", opts, { desc = "Harpoon → 4" }))
 
     -- Cycle through marks
-    map("n", "<C-S-P>", function() current_list():prev({ ui_nav_wrap = true }) end,
-      vim.tbl_extend("force", opts, { desc = "Harpoon: Previous" }))
-    map("n", "<C-S-N>", function() current_list():next({ ui_nav_wrap = true }) end,
-      vim.tbl_extend("force", opts, { desc = "Harpoon: Next" }))
+    map("n", "<C-S-P>", function()
+      current_list():prev({ ui_nav_wrap = true })
+    end, vim.tbl_extend("force", opts, { desc = "Harpoon: Previous" }))
+    map("n", "<C-S-N>", function()
+      current_list():next({ ui_nav_wrap = true })
+    end, vim.tbl_extend("force", opts, { desc = "Harpoon: Next" }))
 
     -- Remove / Clear
     map("n", "<leader>hd", remove_current_file, vim.tbl_extend("force", opts, { desc = "Harpoon: Remove current" }))
@@ -85,6 +87,5 @@ return {
       current_list():clear()
       vim.notify("Harpoon list cleared", vim.log.levels.WARN)
     end, vim.tbl_extend("force", opts, { desc = "Harpoon: Clear all" }))
-
   end,
 }

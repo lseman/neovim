@@ -1,43 +1,52 @@
 require("lazy").setup({
-    spec = {{
-        import = "plugins.ui"
-    }, {
-        import = "plugins.editor"
-    }, {
-        import = "plugins.navigation"
-    }, {
-        import = "plugins.lsp"
-    }, {
-        import = "plugins.git"
-    }, {
-        import = "plugins.notebooks"
-    }, {
-        import = "plugins.terminal"
-    }, {
-        import = "plugins"
-    }},
-    defaults = {
-        lazy = true,
-        version = false
+  spec = {
+    {
+      import = "plugins.ui",
     },
-    install = {
-        missing = true,
-        colorscheme = {"ayu", "habamax"}
+    {
+      import = "plugins.editor",
     },
-    ui = {
-        border = "rounded"
+    {
+      import = "plugins.navigation",
     },
-    checker = {
-        enabled = true,
-        notify = false
+    {
+      import = "plugins.lsp",
     },
-    change_detection = {
-        enabled = true,
-        notify = false
+    {
+      import = "plugins.git",
     },
-    performance = {
-        rtp = {
-            disabled_plugins = {"gzip", "tarPlugin", "tohtml", "tutor", "zipPlugin"}
-        }
-    }
+    {
+      import = "plugins.notebooks",
+    },
+    {
+      import = "plugins.terminal",
+    },
+    {
+      import = "plugins",
+    },
+  },
+  defaults = {
+    lazy = true,
+    version = false,
+  },
+  install = {
+    missing = true,
+    colorscheme = { "ayu", "habamax" },
+  },
+  ui = {
+    border = "rounded",
+  },
+  checker = {
+    enabled = true,
+    notify = false,
+  },
+  change_detection = {
+    enabled = true,
+    notify = false,
+  },
+  performance = {
+    rtp = {
+      disabled_plugins = { "gzip", "tarPlugin", "tohtml", "tutor", "zipPlugin" },
+    },
+  },
 })

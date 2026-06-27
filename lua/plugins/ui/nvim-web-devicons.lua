@@ -1,11 +1,11 @@
 return {
-  'nvim-tree/nvim-web-devicons',
+  "nvim-tree/nvim-web-devicons",
   lazy = true,
   config = function()
-    require('nvim-web-devicons').setup({
+    require("nvim-web-devicons").setup({
       color_icons = true,
       default = true, -- fallback icon when not found
-      strict = true,  -- only override if matching name/extension
+      strict = true, -- only override if matching name/extension
 
       -- Override specific filetypes (by name)
       override = {

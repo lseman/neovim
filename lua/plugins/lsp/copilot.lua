@@ -9,7 +9,7 @@ return {
         auto_trigger = true,
         debounce = 75,
         keymap = {
-          accept = false,  -- handled by <Tab> in keymaps.lua
+          accept = false, -- handled by <Tab> in keymaps.lua
           accept_word = "<M-w>",
           accept_line = "<M-l>",
           next = "<M-]>",

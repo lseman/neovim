@@ -1,21 +1,21 @@
 return {
   "folke/flash.nvim",
   event = "VeryLazy",
-  opts = {                       -- ← prefer `opts =` over `config = function() require("flash").setup()`
-    labels = "asdfghjklqwertyuiopzxcvbnm",   -- home-row biased (very popular choice)
+  opts = { -- ← prefer `opts =` over `config = function() require("flash").setup()`
+    labels = "asdfghjklqwertyuiopzxcvbnm", -- home-row biased (very popular choice)
     search = {
-      multi_window = true,       -- ← very useful in practice (default anyway)
+      multi_window = true, -- ← very useful in practice (default anyway)
       forward = true,
       wrap = true,
-      mode = "fuzzy",            -- ← "exact", "fuzzy", "search" — fuzzy feels more forgiving
+      mode = "fuzzy", -- ← "exact", "fuzzy", "search" — fuzzy feels more forgiving
     },
     jump = {
       history = true,
-      register = true,           -- ← yank/put integration — very powerful
-      nohlsearch = true,         -- ← clean up search highlight (most users want this)
+      register = true, -- ← yank/put integration — very powerful
+      nohlsearch = true, -- ← clean up search highlight (most users want this)
     },
     highlight = {
-      backdrop = true,           -- nice visual feedback
+      backdrop = true, -- nice visual feedback
       matches = { search = { hl = { backdrop = true } } },
     },
     modes = {
@@ -23,7 +23,7 @@ return {
         enabled = true,
         keys = { "f", "F", "t", "T" },
         -- You can also do: multi_line = false  if you hate multi-line fFtT
-        jump_labels = true,      -- ← shows labels even for fFtT (very nice upgrade)
+        jump_labels = true, -- ← shows labels even for fFtT (very nice upgrade)
       },
       search = {
         enabled = true,
@@ -38,13 +38,17 @@ return {
     {
       "s",
       mode = { "n", "x", "o" },
-      function() require("flash").jump() end,
+      function()
+        require("flash").jump()
+      end,
       desc = "Flash Jump",
     },
     {
       "S",
       mode = { "n", "x", "o" },
-      function() require("flash").treesitter() end,
+      function()
+        require("flash").treesitter()
+      end,
       desc = "Flash Treesitter",
     },
 
@@ -52,13 +56,17 @@ return {
     {
       "r",
       mode = "o",
-      function() require("flash").remote() end,
+      function()
+        require("flash").remote()
+      end,
       desc = "Remote Flash",
     },
     {
       "R",
       mode = { "o", "x" },
-      function() require("flash").treesitter_search() end,
+      function()
+        require("flash").treesitter_search()
+      end,
       desc = "Treesitter Search",
     },
 
@@ -66,7 +74,9 @@ return {
     {
       "<c-s>",
       mode = "c",
-      function() require("flash").toggle() end,
+      function()
+        require("flash").toggle()
+      end,
       desc = "Toggle Flash (cmdline)",
     },
 

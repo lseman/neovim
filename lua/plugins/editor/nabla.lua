@@ -1,13 +1,17 @@
-return {{
+return {
+  {
     "jbyuki/nabla.nvim",
-    keys = {{
+    keys = {
+      {
         "<C-b>",
         function()
-            require("nabla").popup()
+          require("nabla").popup()
         end,
-        desc = "Show LaTeX popup"
-    }},
+        desc = "Show LaTeX popup",
+      },
+    },
     config = function()
-        require("nabla").setup({})
-    end
-}}
+      require("nabla").setup({})
+    end,
+  },
+}

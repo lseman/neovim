@@ -1,14 +1,14 @@
 local config = {
   vscode = {
     exclude = vim.g.vscode_snippets_exclude or {},
-    paths = vim.g.vscode_snippets_path or ""
+    paths = vim.g.vscode_snippets_path or "",
   },
   snipmate = {
-    paths = vim.g.snipmate_snippets_path or ""
+    paths = vim.g.snipmate_snippets_path or "",
   },
   lua = {
-    paths = vim.g.lua_snippets_path or ""
-  }
+    paths = vim.g.lua_snippets_path or "",
+  },
 }
 
 local function init_loader(name)
@@ -40,7 +40,9 @@ vim.api.nvim_create_autocmd("InsertLeave", {
   desc = "Clean up LuaSnip snippet nodes when leaving insert mode",
   callback = function()
     local ok, ls = pcall(require, "luasnip")
-    if not ok then return end
+    if not ok then
+      return
+    end
     local buf = vim.api.nvim_get_current_buf()
     if ls.session.current_nodes[buf] and not ls.session.jump_active then
       ls.unlink_current()

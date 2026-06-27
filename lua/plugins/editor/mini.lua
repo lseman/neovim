@@ -5,8 +5,20 @@ return {
     event = "VeryLazy",
 
     keys = {
-      { "<leader>um", function() require("mini.map").toggle() end, desc = "Toggle Mini Map" },
-      { "<leader>uM", function() require("mini.map").refresh() end, desc = "Refresh Mini Map" },
+      {
+        "<leader>um",
+        function()
+          require("mini.map").toggle()
+        end,
+        desc = "Toggle Mini Map",
+      },
+      {
+        "<leader>uM",
+        function()
+          require("mini.map").refresh()
+        end,
+        desc = "Refresh Mini Map",
+      },
     },
 
     opts = {
@@ -29,7 +41,7 @@ return {
     },
 
     config = function(_, opts)
-      local map = require("mini.map")
+      local map = require "mini.map"
 
       local integrations = {}
       local gen = map.gen_integration
