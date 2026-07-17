@@ -9,16 +9,6 @@ return {
         "<cmd>Neogit<CR>",
         desc = "Neogit Status",
       },
-      {
-        "<leader>gd",
-        "<cmd>DiffviewOpen<CR>",
-        desc = "Diffview Open",
-      },
-      {
-        "<leader>gD",
-        "<cmd>DiffviewClose<CR>",
-        desc = "Diffview Close",
-      },
     },
     opts = {
       integrations = {

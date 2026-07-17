@@ -3,21 +3,21 @@ return {
   ft = { "http", "rest" },
   keys = {
     {
-      "<leader>hr",
+      "<leader>kr",
       function()
         require("kulala").run()
       end,
       desc = "HTTP request",
     },
     {
-      "<leader>ha",
+      "<leader>ka",
       function()
         require("kulala").run_all()
       end,
       desc = "HTTP run all",
     },
     {
-      "<leader>hR",
+      "<leader>kR",
       function()
         require("kulala").scratchpad()
       end,

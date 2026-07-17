@@ -159,7 +159,7 @@ return {
     },
     explorer = {
       enabled = true,
-      replace_netrw = true,
+      replace_netrw = false,
       trash = true,
     },
     indent = {
@@ -647,6 +647,27 @@ return {
         Snacks.explorer.reveal()
       end,
       desc = "Reveal File",
+    },
+    {
+      "<leader>kr",
+      function()
+        require("kulala").run()
+      end,
+      desc = "HTTP request",
+    },
+    {
+      "<leader>ka",
+      function()
+        require("kulala").run_all()
+      end,
+      desc = "HTTP run all",
+    },
+    {
+      "<leader>kR",
+      function()
+        require("kulala").scratchpad()
+      end,
+      desc = "HTTP scratchpad",
     },
   },
   init = function()

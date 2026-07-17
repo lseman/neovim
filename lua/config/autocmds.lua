@@ -142,3 +142,27 @@ autocmd("BufReadPre", {
   end,
   desc = "Disable expensive features for large files",
 })
+
+-- nvim-ufo setup
+
+
+
+
+-- nvim-ufo: attach new file buffers (skip dashboard/nofile/special/terminal)
+autocmd("BufWinEnter", {
+  group = group "Ufo",
+  pattern = "*",
+  callback = function(args)
+    local buftype = vim.api.nvim_buf_get_option(args.buf, "buftype")
+    local ft = vim.api.nvim_buf_get_option(args.buf, "filetype")
+    local name = vim.api.nvim_buf_get_name(args.buf)
+    -- Skip nofile, terminal, dashboard, yazi, and buffers without a file path
+    if buftype == "nofile" or buftype == "terminal" or
+       ft == "dashboard" or ft == "snacks_dashboard" or ft == "yazi" or
+       name == "" or name:match("^%w+://") then
+      return
+    end
+    vim.b[args.buf].ufo = true
+  end,
+  desc = "Enable nvim-ufo for file buffers",
+})
