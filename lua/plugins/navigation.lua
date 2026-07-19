@@ -1,4 +1,4 @@
 return {
-  { import = "plugins.navigation.harpoon" },
-  { import = "plugins.navigation.yazi" },
+    { import = "plugins.navigation.harpoon" },
+    { import = "plugins.navigation.oil" },
 }

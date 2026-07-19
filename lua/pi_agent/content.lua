@@ -20,8 +20,8 @@ function Content.get_selected_text()
     local selected = nil
 
     if mode == "v" or mode == "V" or mode == "\22" then
-        local start_pos = vim.fn.getpos("v")
-        local end_pos = vim.fn.getpos(".")
+        local start_pos = vim.fn.getpos "v"
+        local end_pos = vim.fn.getpos "."
 
         local start_line = start_pos[2]
         local start_col = start_pos[3]
@@ -74,15 +74,19 @@ function Content.build_prompt_message(user_message)
     local selected = Content.get_selected_text()
     if selected and selected ~= "" then
         local buf = Content.get_current_buffer()
-        table.insert(content_parts, string.format("Selected code from %s:\n```%s\n%s\n```",
-            buf.filename, buf.filetype, selected))
+        table.insert(
+            content_parts,
+            string.format("Selected code from %s:\n```%s\n%s\n```", buf.filename, buf.filetype, selected)
+        )
     end
 
     -- Add current buffer context
     local buf = Content.get_current_buffer()
     if not selected or selected == "" then
-        table.insert(content_parts, string.format("Current file (%s):\n```%s\n%s\n```",
-            buf.filename, buf.filetype, buf.content))
+        table.insert(
+            content_parts,
+            string.format("Current file (%s):\n```%s\n%s\n```", buf.filename, buf.filetype, buf.content)
+        )
     end
 
     -- Add project context

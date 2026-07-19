@@ -1,8 +1,8 @@
 -- lua/plugins/pi-agent/commands.lua
 -- Neovim commands for pi coding agent
 
-local PiAgentClient = require("pi_agent.client")
-local Content = require("pi_agent.content")
+local Content = require "pi_agent.content"
+local PiAgentClient = require "pi_agent.client"
 
 local client = PiAgentClient:new()
 

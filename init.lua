@@ -1,3 +1,6 @@
+-- Disable Neovim's built-in directory buffer to avoid conflicts with oil.nvim
+vim.g.loaded_nvim_dir_plugin = 1
+
 if vim.loader then
   vim.loader.enable()
 end

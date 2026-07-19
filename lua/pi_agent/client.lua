@@ -54,7 +54,7 @@ function PiAgentClient:stop()
 end
 
 function PiAgentClient:_handle_stdout(data)
-    for line in data:gmatch("[^\r\n]+") do
+    for line in data:gmatch "[^\r\n]+" do
         if line == "" then
             goto continue
         end

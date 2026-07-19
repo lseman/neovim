@@ -3,30 +3,30 @@
 
 -- Color palette
 local palette = {
-	bg = "#0d1117",
-	bg_dark = "#010409",
-	bg_highlight = "#161b22",
-	border = "#30363d",
-	fg = "#c9d1d9",
-	fg_dim = "#8b949e",
-	fg_dark = "#6e7681",
-	blue = "#58a6ff",
-	cyan = "#39d2c0",
-	green = "#3fb950",
-	orange = "#d29922",
-	pink = "#f778ba",
-	purple = "#d2a8ff",
-	red = "#ff7b72",
-	yellow = "#e3b341",
+    bg = "#0d1117",
+    bg_dark = "#010409",
+    bg_highlight = "#161b22",
+    border = "#30363d",
+    fg = "#c9d1d9",
+    fg_dim = "#8b949e",
+    fg_dark = "#6e7681",
+    blue = "#58a6ff",
+    cyan = "#39d2c0",
+    green = "#3fb950",
+    orange = "#d29922",
+    pink = "#f778ba",
+    purple = "#d2a8ff",
+    red = "#ff7b72",
+    yellow = "#e3b341",
 }
 
 vim.g.colors_name = "github-dark"
 
 local function hl(group, opts)
-	opts.fg = opts.fg and palette[opts.fg] or opts.fg
-	opts.bg = opts.bg and palette[opts.bg] or opts.bg
-	opts.sp = opts.sp and palette[opts.sp] or opts.sp
-	vim.api.nvim_set_hl(0, group, opts)
+    opts.fg = opts.fg and palette[opts.fg] or opts.fg
+    opts.bg = opts.bg and palette[opts.bg] or opts.bg
+    opts.sp = opts.sp and palette[opts.sp] or opts.sp
+    vim.api.nvim_set_hl(0, group, opts)
 end
 
 -- ── Core ────────────────────────────────────────────────────────────────────
@@ -341,4 +341,4 @@ hl("NeogitNotificationInfo", { fg = "blue" })
 hl("NeogitNotificationWarning", { fg = "orange" })
 hl("NeogitNotificationError", { fg = "red" })
 
-print("github-dark loaded")
+print "github-dark loaded"

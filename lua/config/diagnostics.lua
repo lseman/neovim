@@ -4,141 +4,156 @@ local popup_delay = 250
 local popup_timer = nil
 
 vim.diagnostic.config({
-	virtual_text = false,
-	virtual_lines = true, -- inline full-line diagnostic decorations (0.11+)
-	signs = {
-		text = {
-			[vim.diagnostic.severity.ERROR] = "●",
-			[vim.diagnostic.severity.WARN] = "●",
-			[vim.diagnostic.severity.INFO] = "●",
-			[vim.diagnostic.severity.HINT] = "●",
-		},
-	},
-	underline = true,
-	update_in_insert = false,
-	severity_sort = true,
-	float = {
-		focusable = false,
-		style = "minimal",
-		border = "rounded",
-		source = true, -- 0.11: boolean replaces deprecated "always"/"if_many" strings
-		header = "",
-		prefix = " ",
-		max_width = 100,
-	},
+    virtual_text = false,
+    virtual_lines = true, -- inline full-line diagnostic decorations (0.11+)
+    signs = {
+        text = {
+            [vim.diagnostic.severity.ERROR] = "󰅚",
+            [vim.diagnostic.severity.WARN] = "󰀪",
+            [vim.diagnostic.severity.INFO] = "󰋽",
+            [vim.diagnostic.severity.HINT] = "󰌶",
+        },
+    },
+    underline = true,
+    update_in_insert = false,
+    severity_sort = true,
+    float = {
+        focusable = false,
+        style = "minimal",
+        border = "rounded",
+        source = true, -- 0.11: boolean replaces deprecated "always"/"if_many" strings
+        header = "",
+        prefix = " ",
+        max_width = 100,
+        line_threshold = 1,
+        margin = { top = 0, bottom = 0 },
+        format = function(diagnostic, _, _) -- luacheck: ignore
+            local text = diagnostic.message
+            text = text:gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
+            return {
+                {
+                    text,
+                    diagnostic.severity == vim.diagnostic.severity.ERROR and "DiagnosticError"
+                        or diagnostic.severity == vim.diagnostic.severity.WARN and "DiagnosticWarn"
+                        or diagnostic.severity == vim.diagnostic.severity.INFO and "DiagnosticInfo"
+                        or "DiagnosticHint",
+                },
+            }
+        end,
+    },
 })
 
 local function show_diagnostics_popup()
-	if not vim.diagnostic.is_enabled({
-		bufnr = 0,
-	}) then
-		return
-	end
+    if not vim.diagnostic.is_enabled({
+        bufnr = 0,
+    }) then
+        return
+    end
 
-	local line = vim.api.nvim_win_get_cursor(0)[1] - 1
-	local diagnostics = vim.diagnostic.get(0, {
-		lnum = line,
-	})
-	if #diagnostics == 0 then
-		return
-	end
+    local line = vim.api.nvim_win_get_cursor(0)[1] - 1
+    local diagnostics = vim.diagnostic.get(0, {
+        lnum = line,
+    })
+    if #diagnostics == 0 then
+        return
+    end
 
-	vim.diagnostic.open_float(nil, {
-		scope = "cursor",
-		close_events = { "BufLeave", "CursorMoved", "InsertEnter", "FocusLost" },
-	})
+    vim.diagnostic.open_float(nil, {
+        scope = "cursor",
+        close_events = { "BufLeave", "CursorMoved", "InsertEnter", "FocusLost" },
+    })
 end
 
 local function show_diagnostics_debounced()
-	if popup_timer then
-		popup_timer:stop()
-		popup_timer:close()
-		popup_timer = nil
-	end
+    if popup_timer then
+        popup_timer:stop()
+        popup_timer:close()
+        popup_timer = nil
+    end
 
-	popup_timer = vim.uv.new_timer()
-	popup_timer:start(
-		popup_delay,
-		0,
-		vim.schedule_wrap(function()
-			show_diagnostics_popup()
-			if popup_timer then
-				popup_timer:stop()
-				popup_timer:close()
-				popup_timer = nil
-			end
-		end)
-	)
+    popup_timer = vim.uv.new_timer()
+    popup_timer:start(
+        popup_delay,
+        0,
+        vim.schedule_wrap(function()
+            show_diagnostics_popup()
+            if popup_timer then
+                popup_timer:stop()
+                popup_timer:close()
+                popup_timer = nil
+            end
+        end)
+    )
 end
 
 local group = vim.api.nvim_create_augroup("DiagnosticsPopup", {
-	clear = true,
+    clear = true,
 })
 
 vim.api.nvim_create_autocmd("CursorHold", {
-	group = group,
-	callback = show_diagnostics_debounced,
-	desc = "Show diagnostics popup on cursor hold",
+    group = group,
+    callback = show_diagnostics_debounced,
+    desc = "Show diagnostics popup on cursor hold",
 })
 
 vim.api.nvim_create_autocmd("InsertEnter", {
-	group = group,
-	callback = function()
-		if popup_timer then
-			popup_timer:stop()
-			popup_timer:close()
-			popup_timer = nil
-		end
-	end,
-	desc = "Cancel diagnostics popup timer on insert",
+    group = group,
+    callback = function()
+        if popup_timer then
+            popup_timer:stop()
+            popup_timer:close()
+            popup_timer = nil
+        end
+    end,
+    desc = "Cancel diagnostics popup timer on insert",
 })
 
 vim.api.nvim_create_autocmd({ "BufLeave", "CursorMoved", "WinLeave" }, {
-	group = group,
-	callback = function()
-		if popup_timer then
-			popup_timer:stop()
-			popup_timer:close()
-			popup_timer = nil
-		end
-	end,
-	desc = "Cancel diagnostics popup timer when cursor context changes",
+    group = group,
+    callback = function()
+        if popup_timer then
+            popup_timer:stop()
+            popup_timer:close()
+            popup_timer = nil
+        end
+    end,
+    desc = "Cancel diagnostics popup timer when cursor context changes",
 })
 
 vim.api.nvim_create_user_command("DiagnosticDelay", function(opts)
-	local new_delay = tonumber(opts.args)
-	if not new_delay or new_delay < 10 then
-		vim.notify("Invalid delay value. Use a number >= 10.", vim.log.levels.ERROR)
-		return
-	end
-	popup_delay = new_delay
-	vim.opt.updatetime = new_delay
-	vim.notify(string.format("Diagnostic popup delay set to %dms", new_delay), vim.log.levels.INFO)
+    local new_delay = tonumber(opts.args)
+    if not new_delay or new_delay < 10 then
+        vim.notify("Invalid delay value. Use a number >= 10.", vim.log.levels.ERROR)
+        return
+    end
+    popup_delay = new_delay
+    vim.opt.updatetime = new_delay
+    vim.notify(string.format("Diagnostic popup delay set to %dms", new_delay), vim.log.levels.INFO)
 end, {
-	nargs = 1,
-	desc = "Set diagnostic popup delay in milliseconds",
+    nargs = 1,
+    desc = "Set diagnostic popup delay in milliseconds",
 })
 
 M.show_popup = show_diagnostics_popup
 M.toggle = function()
-	local enabled = vim.diagnostic.is_enabled({
-		bufnr = 0,
-	})
-	vim.diagnostic.enable(not enabled, {
-		bufnr = 0,
-	})
-	vim.notify(enabled and "Diagnostics disabled" or "Diagnostics enabled", vim.log.levels.INFO)
+    local enabled = vim.diagnostic.is_enabled({
+        bufnr = 0,
+    })
+    vim.diagnostic.enable(not enabled, {
+        bufnr = 0,
+    })
+    vim.notify(enabled and "Diagnostics disabled" or "Diagnostics enabled", vim.log.levels.INFO)
 end
 M.status = function()
-	return vim.diagnostic.is_enabled({
-		bufnr = 0,
-	})
+    return vim.diagnostic.is_enabled({
+        bufnr = 0,
+    })
 end
 M.set_delay = function(delay)
-	if type(delay) == "number" and delay >= 10 then
-		popup_delay = delay
-		vim.opt.updatetime = delay
-	end
+    if type(delay) == "number" and delay >= 10 then
+        popup_delay = delay
+        vim.opt.updatetime = delay
+    end
 end
 
 return M
