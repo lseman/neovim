@@ -5,7 +5,7 @@ local popup_timer = nil
 
 vim.diagnostic.config({
     virtual_text = false,
-    virtual_lines = true, -- inline full-line diagnostic decorations (0.11+)
+    virtual_lines = false, -- disable inline full-line diagnostic decorations
     signs = {
         text = {
             [vim.diagnostic.severity.ERROR] = "󰅚",
@@ -14,7 +14,7 @@ vim.diagnostic.config({
             [vim.diagnostic.severity.HINT] = "󰌶",
         },
     },
-    underline = true,
+    underline = false,
     update_in_insert = false,
     severity_sort = true,
     float = {
@@ -23,23 +23,20 @@ vim.diagnostic.config({
         border = "rounded",
         source = true, -- 0.11: boolean replaces deprecated "always"/"if_many" strings
         header = "",
-        prefix = " ",
+        prefix = function(diagnostic)
+            local icon = diagnostic.severity == vim.diagnostic.severity.ERROR and "󰅚"
+                or diagnostic.severity == vim.diagnostic.severity.WARN and "󰀪"
+                or diagnostic.severity == vim.diagnostic.severity.INFO and "󰋽"
+                or "󰌶"
+            local highlight = diagnostic.severity == vim.diagnostic.severity.ERROR and "DiagnosticError"
+                or diagnostic.severity == vim.diagnostic.severity.WARN and "DiagnosticWarn"
+                or diagnostic.severity == vim.diagnostic.severity.INFO and "DiagnosticInfo"
+                or "DiagnosticHint"
+            return icon .. " ", highlight
+        end,
         max_width = 100,
         line_threshold = 1,
         margin = { top = 0, bottom = 0 },
-        format = function(diagnostic, _, _) -- luacheck: ignore
-            local text = diagnostic.message
-            text = text:gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
-            return {
-                {
-                    text,
-                    diagnostic.severity == vim.diagnostic.severity.ERROR and "DiagnosticError"
-                        or diagnostic.severity == vim.diagnostic.severity.WARN and "DiagnosticWarn"
-                        or diagnostic.severity == vim.diagnostic.severity.INFO and "DiagnosticInfo"
-                        or "DiagnosticHint",
-                },
-            }
-        end,
     },
 })
 

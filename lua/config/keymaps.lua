@@ -304,7 +304,7 @@ map(
     })
 )
 
--- ── 6. Plugins & Utilities ─────────────────────────────────────────────
+-- ── 7. Plugins & Utilities ─────────────────────────────────────────────
 
 map(
     "n",
@@ -322,24 +322,6 @@ map(
     end,
     vim.tbl_extend("force", default_opts, {
         desc = "Nabla popup",
-    })
-)
-
-map(
-    "n",
-    "<F6>",
-    "<cmd>AvanteToggle<CR>",
-    vim.tbl_extend("force", default_opts, {
-        desc = "Toggle avante",
-    })
-)
-
-map(
-    "n",
-    "<F7>",
-    "<cmd>AvanteSelectModel<CR>",
-    vim.tbl_extend("force", default_opts, {
-        desc = "Select Avante model",
     })
 )
 
