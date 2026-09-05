@@ -13,7 +13,7 @@ return {
                     accept_word = "<M-w>",
                     accept_line = "<M-l>",
                     next = "<M-]>",
-                    prev = "<M-[>",
+                    prev = "<M-Up>",
                     dismiss = "<C-]>",
                 },
             },
