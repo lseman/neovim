@@ -56,7 +56,7 @@ local modules = {
   "config.diagnostics",
   "config.highlight",
   "config.keymaps",
-  "config.keymap_cheatsheet",
+  "config.cheatsheet",
   "config.workflows",
   "config.cmp",
 }

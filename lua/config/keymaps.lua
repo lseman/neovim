@@ -426,5 +426,17 @@ end, { desc = "Previous diagnostic" })
 
 -- ── 10. Commenting ────────────────────────────────────────────────────────
 
+-- ── Cheatsheet ───────────────────────────────────────────────────────────
+map(
+    "n",
+    "<leader>fc",
+    function()
+        require("config.cheatsheet").open()
+    end,
+    vim.tbl_extend("force", default_opts, {
+        desc = "Open keymap cheatsheet",
+    })
+)
+
 map("n", "<leader>/", "gcc", { remap = true, desc = "Toggle line comment" })
 map("x", "<leader>/", "gc", { remap = true, desc = "Toggle selection comment" })

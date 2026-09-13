@@ -6,7 +6,11 @@ require("lazy").setup({
     }, {
         import = "plugins.navigation"
     }, {
-        import = "plugins.lsp"
+        -- Import the explicit spec list without scanning its helper modules.
+        name = "plugins.lsp",
+        import = function()
+            return require "plugins.lsp"
+        end
     }, {
         import = "plugins.git"
     }, {

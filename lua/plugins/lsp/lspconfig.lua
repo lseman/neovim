@@ -17,6 +17,8 @@ return {
         },
 
         config = function()
+            local interactive_rename = require "plugins.lsp.interactive-rename"
+            local signature = require "plugins.lsp.signature"
             local ok, blink = pcall(require, "blink.cmp")
             local capabilities = ok and blink.get_lsp_capabilities() or vim.lsp.protocol.make_client_capabilities()
 
@@ -33,6 +35,7 @@ return {
             end
 
             local on_attach = function(client, bufnr)
+                signature.setup(client, bufnr)
                 local map = function(mode, lhs, rhs, desc)
                     vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, desc = desc, silent = true })
                 end
@@ -41,7 +44,7 @@ return {
                 map("n", "gr", lsp_picker "lsp_references", "References")
                 map("n", "gI", lsp_picker "lsp_implementations", "Implementation")
                 map("n", "K", vim.lsp.buf.hover, "Hover")
-                map("n", "<leader>rn", vim.lsp.buf.rename, "Rename")
+                map("n", "<leader>rn", interactive_rename, "Interactive Rename")
                 map("n", "<leader>sh", vim.lsp.buf.signature_help, "Signature Help")
                 map("n", "<leader>ds", lsp_picker "lsp_symbols", "Doc Symbols")
                 map("n", "<leader>ws", lsp_picker "lsp_workspace_symbols", "WS Symbols")
