@@ -1,1 +1,1 @@
-return { "folke/ts-comments.nvim", event = "VeryLazy", opts = {} }
+return { "folke/ts-comments.nvim", event = "User FilePost", opts = {} }

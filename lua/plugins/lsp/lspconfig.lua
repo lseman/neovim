@@ -41,6 +41,8 @@ return {
                 end
 
                 map("n", "gd", lsp_picker "lsp_definitions", "Definition")
+                map("n", "gD", lsp_picker "lsp_declarations", "Declaration")
+                map("n", "<leader>D", lsp_picker "lsp_type_definitions", "Type definition")
                 map("n", "gr", lsp_picker "lsp_references", "References")
                 map("n", "gI", lsp_picker "lsp_implementations", "Implementation")
                 map("n", "K", vim.lsp.buf.hover, "Hover")

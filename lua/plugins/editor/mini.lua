@@ -2,7 +2,7 @@ return {
     {
         "echasnovski/mini.map",
         version = false,
-        event = "VeryLazy",
+    event = "User FilePost",
 
         keys = {
             {

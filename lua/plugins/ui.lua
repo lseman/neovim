@@ -7,7 +7,6 @@ return {
     { import = "plugins.ui.lualine" },
     { import = "plugins.ui.nvim-web-devicons" },
     { import = "plugins.ui.snacks" },
-    { import = "plugins.ui.todo-comments" },
     { import = "plugins.ui.trouble" },
     { import = "plugins.ui.which-key" },
 }

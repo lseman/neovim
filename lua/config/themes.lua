@@ -16,6 +16,9 @@ local S = {
     index = 1,
     active_theme = vim.g.colors_name or "default",
     widest_name = 0,
+    confirmed = false,
+    original_theme = nil,
+    original_background = nil,
 }
 
 -- ── Helpers ──────────────────────────────────────────────────────────────
@@ -112,7 +115,7 @@ end
 
 -- ── Rendering ────────────────────────────────────────────────────────────
 -- Each theme row is real buffer text:
---   "  catppuccin-mocha  ████"  (arrow + name + swatches)
+--   "  catppuccin-mocha  ██████ ┃"  (name + swatches + active-bar, NvChad-style)
 -- Background = theme bg via bufhl, name/swatch colors via syntax highlights.
 
 local function render_themes()
@@ -121,37 +124,59 @@ local function render_themes()
     -- Clear all highlights in our namespace first
     api.nvim_buf_clear_namespace(S.buf, S.ns, 0, -1)
 
+    -- ── Phase 1: build text + column offsets for every row ────────────
+    -- (nvim_buf_add_highlight must run AFTER the text exists in the buffer —
+    -- adding it against a still-empty/stale line clamps to a zero-width
+    -- range, so highlights silently never attach. Hence the two-phase split.)
     local lines = {}
+    local rows = {}
     for i = 1, #S.filtered do
         local name = S.filtered[i]
         local palette = get_palette(name)
         local is_active_row = (i == S.index)
+        local safe = name:gsub("[^a-zA-Z0-9]", "_")
 
-        -- Build the text: indicator + name + swatches
-        local arrow = is_active_row and "  " or "   "
-        local parts = { arrow .. name }
-
+        -- Define this row's highlight groups from its sampled palette
+        -- (nvim_buf_add_highlight below only *references* these by name).
+        api.nvim_set_hl(S.ns, "TP_bg_" .. safe, { bg = palette.bg })
+        api.nvim_set_hl(S.ns, "TP_name_" .. safe, { fg = palette.fg, bg = palette.bg })
         for _, key in ipairs(SWATCH_KEYS) do
-            parts[#parts + 1] = "█"
+            api.nvim_set_hl(S.ns, "TP_sw_" .. safe .. "_" .. key, { fg = palette[key], bg = palette.bg })
         end
 
-        lines[i] = table.concat(parts, "")
-
-        -- ── Background: apply theme bg to the entire row ──────────────
-        api.nvim_buf_add_highlight(S.buf, S.ns, "TP_bg_" .. name:gsub("[^a-zA-Z0-9]", "_"), i - 1, 0, #lines[i])
-
-        -- ── Name highlight: theme fg on theme bg ─────────────────────
-        local arrow_w = is_active_row and 3 or 3
-        local name_end = arrow_w + #name
-        api.nvim_buf_add_highlight(S.buf, S.ns, "TP_name_" .. name:gsub("[^a-zA-Z0-9]", "_"), i - 1, arrow_w, name_end)
-
-        -- ── Swatch highlights: each swatch gets its color ────────────
-        local col = name_end + 1  -- skip space between name and swatches
-        for _, key in ipairs(SWATCH_KEYS) do
-            local hl_name = "TP_sw_" .. name:gsub("[^a-zA-Z0-9]", "_") .. "_" .. key
-            api.nvim_buf_add_highlight(S.buf, S.ns, hl_name, i - 1, col, col + 1)
-            col = col + 1
+        -- Build the text, tracking byte offsets (not char counts) since
+        -- "█"/"┃"/"│" are multi-byte UTF-8 and nvim_buf_add_highlight wants bytes.
+        local col = 0
+        local pieces = {}
+        local function put(s)
+            pieces[#pieces + 1] = s
+            col = col + #s
+            return col
         end
+
+        put "  "
+        local name_start = col
+        put(name)
+        local name_end = col
+        put(string.rep(" ", S.widest_name - #name) .. " ")
+
+        local swatch_start = col
+        for _ in ipairs(SWATCH_KEYS) do put "█" end
+
+        put " "
+        local bar_start = col
+        put(is_active_row and "┃" or "│")
+        local bar_end = col
+
+        lines[i] = table.concat(pieces, "")
+        rows[i] = {
+            safe = safe,
+            is_active_row = is_active_row,
+            name_start = name_start, name_end = name_end,
+            swatch_start = swatch_start,
+            bar_start = bar_start, bar_end = bar_end,
+            line_len = #lines[i],
+        }
     end
 
     if #lines == 0 then lines = { "No matching themes." } end
@@ -159,6 +184,30 @@ local function render_themes()
     vim.bo[S.buf].modifiable = true
     api.nvim_buf_set_lines(S.buf, 0, -1, false, lines)
     vim.bo[S.buf].modifiable = false
+
+    -- ── Phase 2: now that the text exists, attach highlights to it ─────
+    for i, row in ipairs(rows) do
+        -- ── Background: apply theme bg to the entire row ──────────────
+        api.nvim_buf_add_highlight(S.buf, S.ns, "TP_bg_" .. row.safe, i - 1, 0, row.line_len)
+
+        -- ── Name highlight: theme fg on theme bg ─────────────────────
+        api.nvim_buf_add_highlight(S.buf, S.ns, "TP_name_" .. row.safe, i - 1, row.name_start, row.name_end)
+
+        -- ── Swatch highlights: each swatch gets its color ────────────
+        local scol = row.swatch_start
+        for _, key in ipairs(SWATCH_KEYS) do
+            local hl_name = "TP_sw_" .. row.safe .. "_" .. key
+            api.nvim_buf_add_highlight(S.buf, S.ns, hl_name, i - 1, scol, scol + 3)
+            scol = scol + 3
+        end
+
+        -- ── Active-row indicator: accent bar, NvChad-style ────────────
+        api.nvim_buf_add_highlight(
+            S.buf, S.ns,
+            row.is_active_row and "TP_bar_active" or "TP_bar_inactive",
+            i - 1, row.bar_start, row.bar_end
+        )
+    end
 end
 
 -- ── Layout ───────────────────────────────────────────────────────────────
@@ -194,6 +243,9 @@ M.open = function()
     end
 
     S.active_theme = vim.g.colors_name or "default"
+    S.confirmed = false
+    S.original_theme = S.active_theme
+    S.original_background = vim.o.background
 
     -- Gather themes
     S.themes = get_all_themes()
@@ -254,6 +306,8 @@ M.open = function()
     -- Namespace highlights (global defaults)
     api.nvim_set_hl(S.ns, "FloatBorder", { link = "FloatBorder" })
     api.nvim_set_hl(S.ns, "Normal", { link = "Normal" })
+    api.nvim_set_hl(S.ns, "TP_bar_active", { fg = "#89b4fa", bold = true })
+    api.nvim_set_hl(S.ns, "TP_bar_inactive", { link = "Comment" })
     api.nvim_win_set_hl_ns(S.win, S.ns)
 
     -- Render themes first (so highlights have content to attach to)
@@ -261,12 +315,20 @@ M.open = function()
 
     -- ── Keymaps ──────────────────────────────────────────────────────
 
+    -- Live-preview: apply the highlighted theme to the whole editor as you
+    -- browse (NvChad-style). Reverted in M.close() unless a pick is confirmed.
+    local function preview_current()
+        if S.index < 1 or S.index > #S.filtered then return end
+        pcall(vim.cmd.colorscheme, S.filtered[S.index])
+    end
+
     local function on_select()
         if #S.filtered == 0 then return end
         local chosen = S.filtered[S.index]
         vim.cmd.stopinsert()
         local ok, err = pcall(vim.cmd.colorscheme, chosen)
         if not ok then vim.notify(err, vim.log.levels.ERROR); return end
+        S.confirmed = true
         vim.g.current_theme = chosen
         vim.notify("Theme: " .. chosen, vim.log.levels.INFO)
         M.close()
@@ -282,6 +344,7 @@ M.open = function()
         end
         S.index = #S.filtered > 0 and 1 or 0
         render_themes()
+        preview_current()
     end
 
     -- Enter selects (both windows)
@@ -296,18 +359,18 @@ M.open = function()
 
     -- Navigate (j/k on theme window)
     vim.keymap.set("n", "j", function()
-        if S.index < #S.filtered then S.index = S.index + 1; render_themes() end
+        if S.index < #S.filtered then S.index = S.index + 1; render_themes(); preview_current() end
     end, { buffer = S.buf })
     vim.keymap.set("n", "k", function()
-        if S.index > 1 then S.index = S.index - 1; render_themes() end
+        if S.index > 1 then S.index = S.index - 1; render_themes(); preview_current() end
     end, { buffer = S.buf })
 
     -- Navigate (arrows on input window)
     vim.keymap.set("i", "<Up>", function()
-        if S.index > 1 then S.index = S.index - 1; render_themes() end
+        if S.index > 1 then S.index = S.index - 1; render_themes(); preview_current() end
     end, { buffer = S.input_buf })
     vim.keymap.set("i", "<Down>", function()
-        if S.index < #S.filtered then S.index = S.index + 1; render_themes() end
+        if S.index < #S.filtered then S.index = S.index + 1; render_themes(); preview_current() end
     end, { buffer = S.input_buf })
 
     -- Filter on type (auto via autocmd)
@@ -333,14 +396,22 @@ end
 
 M.close = function()
     local win, input_win, buf, input_buf = S.win, S.input_win, S.buf, S.input_buf
+    local confirmed, orig_theme, orig_bg = S.confirmed, S.original_theme, S.original_background
     S.win, S.input_win, S.buf, S.input_buf = nil, nil, nil, nil
+    S.confirmed = false
     pcall(api.nvim_del_augroup_by_name, "ThemePickerInput")
     vim.cmd.stopinsert()
     for _, w in ipairs({ win, input_win }) do
-        if api.nvim_win_is_valid(w) then api.nvim_win_close(w, true) end
+        if w and api.nvim_win_is_valid(w) then api.nvim_win_close(w, true) end
     end
     for _, b in ipairs({ buf, input_buf }) do
-        if api.nvim_buf_is_valid(b) then api.nvim_buf_delete(b, { force = true }) end
+        if b and api.nvim_buf_is_valid(b) then api.nvim_buf_delete(b, { force = true }) end
+    end
+
+    -- Cancelled (Esc/q/focus-lost) rather than confirmed: revert the live preview.
+    if not confirmed and orig_theme then
+        vim.o.background = orig_bg
+        pcall(vim.cmd.colorscheme, orig_theme)
     end
 end
 

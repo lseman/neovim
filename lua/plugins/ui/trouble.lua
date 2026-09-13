@@ -1,6 +1,6 @@
 return {
     "folke/trouble.nvim",
-    event = "VeryLazy",
+    event = "User FilePost",
     opts = {
         win = {
             type = "split",

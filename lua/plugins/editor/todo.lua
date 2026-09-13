@@ -2,7 +2,7 @@ return {
     "folke/todo-comments.nvim",
     dependencies = { "nvim-lua/plenary.nvim" },
     cmd = { "TodoTrouble", "TodoQuickFix", "TodoLocList" },
-    event = { "BufReadPost", "BufNewFile" },
+    event = "User FilePost",
     opts = {
         signs = true,
         keywords = {

@@ -1,6 +1,6 @@
 return {
     "folke/flash.nvim",
-    event = "VeryLazy",
+    event = "User FilePost",
     opts = { -- ← prefer `opts =` over `config = function() require("flash").setup()`
         labels = "asdfghjklqwertyuiopzxcvbnm", -- home-row biased (very popular choice)
         search = {

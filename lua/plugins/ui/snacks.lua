@@ -15,7 +15,7 @@ end
 
 return {
     "folke/snacks.nvim",
-    event = "VeryLazy",
+    event = "User FilePost",
 
     ---@type snacks.Config
     opts = {

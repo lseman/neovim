@@ -39,6 +39,7 @@ local ui_options = {
     exrc = true, -- allow project-local .nvim.lua config (0.10+)
     laststatus = 3,
     winborder = "rounded",
+    fillchars = { eob = " " }, -- no ~ tildes at end of buffer
 }
 
 local search_options = {

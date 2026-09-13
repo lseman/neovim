@@ -8,6 +8,36 @@ local function group(name)
     })
 end
 
+-- ============================================================
+-- User FilePost: fires after UIEnter + real file buffer.
+-- All plugins subscribe to this instead of scattered events.
+-- ============================================================
+autocmd({ "UIEnter", "BufReadPost", "BufNewFile" }, {
+    group = group "NvFilePost",
+    callback = function(args)
+        local file = vim.api.nvim_buf_get_name(args.buf)
+        local buftype = vim.api.nvim_get_option_value("buftype", { buf = args.buf })
+
+        if not vim.g.ui_entered and args.event == "UIEnter" then
+            vim.g.ui_entered = true
+        end
+
+        if file ~= "" and buftype ~= "nofile" and vim.g.ui_entered then
+            vim.api.nvim_exec_autocmds("User", { pattern = "FilePost", modeline = false })
+            vim.api.nvim_del_augroup_by_name "NvFilePost"
+
+            vim.schedule(function()
+                vim.api.nvim_exec_autocmds("FileType", {})
+
+                if vim.g.editorconfig then
+                    local ok, ec = pcall(require, "editorconfig")
+                    if ok then ec.config(args.buf) end
+                end
+            end)
+        end
+    end,
+})
+
 -- Terminal and cursor settings
 autocmd("ExitPre", {
     group = group "Exit",
@@ -157,3 +187,16 @@ autocmd("BufWinEnter", {
     end,
     desc = "Enable nvim-ufo for file buffers"
 })
+-- ============================================================
+-- TSInstallAll: install all Treesitter parsers from ensure_installed list
+-- ============================================================
+vim.api.nvim_create_user_command("TSInstallAll", function()
+    local spec = require("lazy.core.config").plugins["nvim-treesitter"]
+    local opts = type(spec.opts) == "table" and spec.opts or {}
+    local langs = opts.ensure_installed or {}
+    if #langs == 0 then
+        vim.notify("No Treesitter parsers in ensure_installed", vim.log.levels.WARN)
+        return
+    end
+    require("nvim-treesitter").install(langs)
+end, { desc = "Install all Treesitter parsers" })

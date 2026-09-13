@@ -129,7 +129,7 @@ end
 
 return {{
     "stevearc/oil.nvim",
-    event = "VeryLazy",
+    event = "User FilePost",
     dependencies = {"nvim-tree/nvim-web-devicons", "ibhagwan/fzf-lua"},
     keys = {{
         "<leader>-",
