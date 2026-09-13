@@ -19,14 +19,6 @@ return {
             end
         end
 
-        -- LSP diagnostic icons
-        local diagnostic_symbols = {
-            error = " ",
-            warn = " ",
-            info = " ",
-            hint = " ",
-        }
-
         -- Define venv lualine component
         local function venv_statusline()
             local ok, venv = pcall(require, "config.env")
@@ -84,7 +76,6 @@ return {
                     {
                         "diagnostics",
                         sources = { "nvim_diagnostic" },
-                        symbols = diagnostic_symbols,
                         colored = true,
                         update_in_insert = false,
                     },

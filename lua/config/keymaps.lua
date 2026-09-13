@@ -409,3 +409,22 @@ map("n", "<leader>bD", function()
         end
     end
 end, { desc = "Close other buffers" })
+
+-- ── 9. Diagnostics ────────────────────────────────────────────────────────
+
+map("n", "<leader>cd", function()
+    Snacks.picker.diagnostics()
+end, { desc = "Diagnostics (buffer)" })
+
+map("n", "<leader>cn", function()
+    vim.diagnostic.jump({ count = 1 })
+end, { desc = "Next diagnostic" })
+
+map("n", "<leader>cp", function()
+    vim.diagnostic.jump({ count = -1 })
+end, { desc = "Previous diagnostic" })
+
+-- ── 10. Commenting ────────────────────────────────────────────────────────
+
+map("n", "<leader>/", "gcc", { remap = true, desc = "Toggle line comment" })
+map("x", "<leader>/", "gc", { remap = true, desc = "Toggle selection comment" })

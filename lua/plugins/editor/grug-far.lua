@@ -41,7 +41,7 @@ return {
             desc = "Search and replace scratch",
         },
         {
-            "<leader>sr",
+            "<leader>sR",
             function()
                 require("grug-far").with_visual_selection()
             end,

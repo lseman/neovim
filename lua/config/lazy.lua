@@ -11,8 +11,6 @@ require("lazy").setup({
         import = "plugins.git"
     }, {
         import = "plugins.notebooks"
-    }, {
-        import = "plugins.terminal"
     }},
     defaults = {
         lazy = true,
