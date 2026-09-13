@@ -29,6 +29,7 @@ local actions = {
     { "k", "󰌌", "Shortcut cheatsheet", function() require("config.cheatsheet").open() end },
     { "l", "󰒲", "Manage plugins", ":Lazy" },
     { "h", "󰓙", "Health check", ":checkhealth" },
+    { "t", "", "Choose theme", function() require("config.themes").toggle() end },
     { "q", "", "Quit", ":qa" },
 }
 
