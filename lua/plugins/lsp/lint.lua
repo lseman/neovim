@@ -7,11 +7,11 @@ return {
 
         -- Linters per filetype
         lint.linters_by_ft = {
-            lua = { "luacheck" },
+            lua = {}, -- lua_ls handles diagnostics
             python = {}, -- Assuming you're using ruff LSP instead
-            sh = { "shellcheck" },
-            bash = { "shellcheck" },
-            zsh = { "shellcheck" },
+            sh = {},
+            bash = {},
+            zsh = {},
             javascript = {}, -- LSP (biome/eslint) handles diagnostics
             typescript = {}, -- LSP (biome/eslint) handles diagnostics
             markdown = {},

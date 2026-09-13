@@ -8,7 +8,7 @@ return {
             {
                 "williamboman/mason-lspconfig.nvim",
                 opts = {
-                    ensure_installed = { "basedpyright", "ruff", "clangd", "lua_ls", "vhdl_ls", "biome" },
+                    ensure_installed = { "basedpyright", "ruff", "lua_ls", "biome" },
                     automatic_enable = true,
                 },
             },
@@ -127,7 +127,7 @@ return {
                 end,
             })
 
-            vim.lsp.enable({ "basedpyright", "ruff", "clangd", "lua_ls", "vhdl_ls", "biome" })
+            vim.lsp.enable({ "basedpyright", "ruff", "clangd", "lua_ls", "biome" })
 
             require("cmake-tools").setup({
                 cmake_build_directory = "build",

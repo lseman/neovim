@@ -67,4 +67,3 @@ end
 
 pcall(vim.cmd.colorscheme, "ayu-mirage")
 
-safe_require("pi_agent")
