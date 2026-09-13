@@ -92,9 +92,5 @@ return {
             desc = "Toggle Flash (cmdline)",
         },
 
-        -- Bonus mappings many people add (pick what you like)
-        -- { "gl", mode = { "n", "x", "o" }, function() require("flash").jump({
-        --     search = { forward = false, wrap = false, multi_window = false },
-        --   }) end, desc = "Flash backward" },
     },
 }

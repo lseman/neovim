@@ -107,15 +107,6 @@ return {
             end
         end, "Jump to Context & Center")
 
-        -- Optional: buffer-local navigation (uncomment if preferred)
-        -- vim.api.nvim_create_autocmd("FileType", {
-        --   pattern = { "*" }, -- or specific fts
-        --   callback = function(ev)
-        --     if not vim.bo[ev.buf].modifiable then return end
-        --     vim.keymap.set("n", "gC", function() ctx.go_to_context(vim.v.count1) end,
-        --       { buffer = ev.buf, desc = "Go to Context", silent = true })
-        --   end,
-        -- })
 
         -- Commands
         vim.api.nvim_create_user_command("TSContextRefresh", function()

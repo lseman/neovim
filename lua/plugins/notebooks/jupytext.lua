@@ -36,17 +36,6 @@ return {
         -- Enable handling of jupytext://... URL schemes (optional)
         handle_url_schemes = true,
 
-        -- Custom filetype detection (uncomment and adjust if needed)
-        -- filetype = function(path)
-        --   -- Example: force python for percent-format files
-        --   if path:match("%.py$") and vim.fn.getline(1):match("^# %%") then
-        --     return "python"
-        --   end
-        --   return require("jupytext").get_filetype(path)
-        -- end,
-
-        -- Template for new notebooks (uncomment if you want custom defaults)
-        -- new_template = require("jupytext").default_new_template(),
     },
 
     config = function(_, opts)

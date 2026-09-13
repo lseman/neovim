@@ -10,17 +10,6 @@ return {
             desc = "Search and replace",
         },
         {
-            "<C-h>",
-            function()
-                require("grug-far").open({
-                    prefills = {
-                        paths = vim.fn.expand "%",
-                    },
-                })
-            end,
-            desc = "Search and replace current file",
-        },
-        {
             "<leader>rw",
             function()
                 require("grug-far").open({

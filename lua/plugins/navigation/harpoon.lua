@@ -66,12 +66,6 @@ return {
         -- ── Additional useful mappings (grouped under <leader>h) ────────────────
         map("n", "<leader>hm", open_list, vim.tbl_extend("force", opts, { desc = "Harpoon: List" }))
 
-        -- Quick jumps to slots 1–4
-        -- map("n", "<C-h>", function() list:select(1) end, vim.tbl_extend("force", opts, { desc = "Harpoon → 1" }))
-        -- map("n", "<C-j>", function() list:select(2) end, vim.tbl_extend("force", opts, { desc = "Harpoon → 2" }))
-        -- map("n", "<C-k>", function() list:select(3) end, vim.tbl_extend("force", opts, { desc = "Harpoon → 3" }))
-        -- map("n", "<C-l>", function() list:select(4) end, vim.tbl_extend("force", opts, { desc = "Harpoon → 4" }))
-
         -- Cycle through marks
         map("n", "<C-S-P>", function()
             current_list():prev({ ui_nav_wrap = true })

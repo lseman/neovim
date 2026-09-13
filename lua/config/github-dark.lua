@@ -329,16 +329,5 @@ hl("DiffChange", { fg = "blue", bg = "#0d1f31" })
 hl("DiffDelete", { fg = "red", bg = "#381f25" })
 hl("DiffText", { fg = "yellow", bg = "#362c0c" })
 
--- ── Neogit ──────────────────────────────────────────────────────────────────
-hl("NeogitBranch", { fg = "blue", bold = true })
-hl("NeogitRemote", { fg = "green" })
-hl("NeogitHunkHeader", { fg = "blue", bg = "bg_highlight" })
-hl("NeogitDiffHeader", { fg = "yellow" })
-hl("NeogitDiffContext", { fg = "fg_dim" })
-hl("NeogitDiffAdd", { fg = "green" })
-hl("NeogitDiffDelete", { fg = "red" })
-hl("NeogitNotificationInfo", { fg = "blue" })
-hl("NeogitNotificationWarning", { fg = "orange" })
-hl("NeogitNotificationError", { fg = "red" })
 
 print "github-dark loaded"

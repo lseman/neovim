@@ -72,11 +72,11 @@ map("i", "<C-S-z>", "<C-o><C-r>", default_opts)
 
 -- ── 2. Navigation ───────────────────────────────────────────────────────
 
--- Window navigation with <C-h/j/k/l>
-map("n", "<C-h>", "<C-w>h", default_opts)
-map("n", "<C-j>", "<C-w>j", default_opts)
-map("n", "<C-k>", "<C-w>k", default_opts)
-map("n", "<C-l>", "<C-w>l", default_opts)
+-- Window navigation with <C-w>h/j/k/l
+map("n", "<C-w>h", "<C-w>h", default_opts)
+map("n", "<C-w>j", "<C-w>j", default_opts)
+map("n", "<C-w>k", "<C-w>k", default_opts)
+map("n", "<C-w>l", "<C-w>l", default_opts)
 
 -- Resize windows with <C-Up/Down/Left/Right>
 map("n", "<C-Up>", "<cmd>resize +2<CR>", default_opts)
@@ -193,7 +193,7 @@ map(
 map("v", "<Tab>", ">gv", default_opts)
 map("v", "<S-Tab>", "<gv", default_opts)
 
--- ── 5. Search / Picker (Snacks) ────────────────────────────────────────────
+-- ── 6. Search / Picker (Snacks) ────────────────────────────────────────────
 
 map(
     "n",
@@ -304,7 +304,7 @@ map(
     })
 )
 
--- ── 7. Plugins & Utilities ─────────────────────────────────────────────
+-- ── 8. Plugins & Utilities ─────────────────────────────────────────────
 
 map(
     "n",
@@ -345,7 +345,7 @@ map(
     })
 )
 
--- ── 7. Quickfix / Location List Navigation ──────────────────────────────────
+-- ── 9. Quickfix / Location List Navigation ─────────────────────────────────
 
 -- Quickfix navigation
 map("n", "]q", function()
@@ -363,7 +363,7 @@ map("n", "[l", function()
     vim.fn.lprev()
 end, { desc = "Previous location" })
 
--- ── 8. Buffer Navigation ─────────────────────────────────────────────────
+-- ── 10. Buffer Navigation ────────────────────────────────────────────────
 
 -- Buffer navigation with Tab/Shift-Tab (when barbar.nvim is disabled)
 map("n", "<Tab>", function()
@@ -410,7 +410,7 @@ map("n", "<leader>bD", function()
     end
 end, { desc = "Close other buffers" })
 
--- ── 9. Diagnostics ────────────────────────────────────────────────────────
+-- ── 11. Diagnostics ───────────────────────────────────────────────────────
 
 map("n", "<leader>cd", function()
     Snacks.picker.diagnostics()
@@ -424,9 +424,7 @@ map("n", "<leader>cp", function()
     vim.diagnostic.jump({ count = -1 })
 end, { desc = "Previous diagnostic" })
 
--- ── 10. Commenting ────────────────────────────────────────────────────────
-
--- ── Cheatsheet ───────────────────────────────────────────────────────────
+-- ── Cheatsheet ──────────────────────────────────────────────────────────────
 map(
     "n",
     "<leader>fc",
@@ -438,5 +436,6 @@ map(
     })
 )
 
+-- ── Commenting ────────────────────────────────────────────────────────────
 map("n", "<leader>/", "gcc", { remap = true, desc = "Toggle line comment" })
 map("x", "<leader>/", "gc", { remap = true, desc = "Toggle selection comment" })

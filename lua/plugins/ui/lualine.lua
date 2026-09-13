@@ -157,7 +157,7 @@ return {
                 lualine_z = { "tabs" },
             },
 
-            extensions = { "toggleterm", "fugitive", "quickfix" },
+            extensions = { "toggleterm", "quickfix" },
         })
     end,
 }

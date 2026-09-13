@@ -123,7 +123,6 @@ return {
             cmake = { "cmake-format" },
 
             go = { "goimports", "gofmt" },
-            -- go = { "gofumpt", "goimports", "gofmt" }, -- if you prefer gofumpt
         },
 
         -- Formatter customizations

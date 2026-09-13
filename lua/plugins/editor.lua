@@ -1,5 +1,4 @@
 return {
-    { import = "plugins.editor.fff" },
     { import = "plugins.editor.grug-far" },
     { import = "plugins.editor.kulala" },
     { import = "plugins.editor.md" },

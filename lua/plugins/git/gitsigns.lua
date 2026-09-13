@@ -57,10 +57,7 @@ return {
             virt_text_priority = 100,
         },
         current_line_blame_formatter = function(name, info)
-            -- name = author name
-            -- info = table with: author_mail, author_time (seconds since epoch), abbrev_sha, summary, etc.
-
-            local time_str = os.date("%Y-%m-%d %H:%M", info.author_time) -- or "%R" for relative time like "2 hours ago"
+            local time_str = os.date("%Y-%m-%d %H:%M", info.author_time)
 
             return {
                 { name .. ", ", "GitSignsCurrentLineBlameAuthor" }, -- or just "Comment"
@@ -69,8 +66,6 @@ return {
                 { info.summary or "(no message)", "GitSignsCurrentLineBlameSummary" },
             }
         end,
-        -- or keep your original string formatter if you prefer
-        -- current_line_blame_formatter = "<author>, <author_time:%Y-%m-%d %H:%M> - <abbrev_sha> - <summary>",
 
         sign_priority = 6,
         update_debounce = 100,
@@ -84,9 +79,6 @@ return {
             width = 80, -- or 0.8 for relative width
         },
 
-        -- Optional: better statusline component (many use this in lualine)
-        -- You can remove or keep — depends if you have a custom statusline
-        -- _signs_by_lnum = {},  -- internal
 
         on_attach = function(bufnr)
             local gs = require "gitsigns"
@@ -169,9 +161,6 @@ return {
             -- Text object (very useful)
             map({ "o", "x" }, "ih", ":<C-U>Gitsigns select_hunk<CR>", "GitSigns Hunk")
 
-            -- Optional extras many people add
-            -- map("n", "<leader>hB", function() gs.blame_line({ full = true, ignore_whitespace = true }) end, "Blame Line (ignore ws)")
-            -- map("n", "]d", gs.next_changed_hunk, "Next Changed Hunk")  -- if you want separate from ]c
         end,
     },
 

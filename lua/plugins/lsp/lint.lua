@@ -18,14 +18,6 @@ return {
             -- Add more filetypes here as needed
         }
 
-        -- Optional: Custom linter overrides (example for ruff if you ever want to use the standalone one)
-        -- lint.linters.ruff = {
-        --   args = { "--quiet", "--output-format", "json" },
-        --   stdin = true,
-        --   stream = "stdout",
-        --   ignore_exitcode = true,
-        -- }
-
         -- Debounce settings
         local debounce_timer = nil
         local DEBOUNCE_MS = 120
@@ -63,7 +55,6 @@ return {
                     uv.close(debounce_timer)
                     debounce_timer = nil
 
-                    -- Optional: skip if ruff LSP is attached (prevents duplicate diagnostics)
                     local clients = vim.lsp.get_clients({ bufnr = bufnr })
                     for _, client in ipairs(clients) do
                         if client.name == "ruff" or client.name == "ruff_lsp" then
@@ -111,12 +102,5 @@ return {
             )
         end, { desc = "Manually lint current buffer" })
 
-        -- Optional: reset diagnostics before write (uncomment if you prefer fresh diagnostics on save)
-        -- vim.api.nvim_create_autocmd("BufWritePre", {
-        --   group = vim.api.nvim_create_augroup("lint-clear-before-write", { clear = true }),
-        --   callback = function()
-        --     vim.diagnostic.reset(nil, vim.api.nvim_get_current_buf())
-        --   end,
-        -- })
     end,
 }

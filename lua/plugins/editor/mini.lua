@@ -52,13 +52,6 @@ return {
             end
             opts.integrations = integrations
 
-            -- Generate encoding symbols **now** that we have required the module
-            -- opts.symbols.encode = map.gen_encode_symbols.square("4x2")  -- or .dot("4x2")
-
-            -- Optional: nicer symbols (popular in 2025+ configs)
-            -- opts.symbols.scroll_line = "━"
-            -- opts.symbols.scroll_view = "▌"
-
             map.setup(opts)
         end,
     },

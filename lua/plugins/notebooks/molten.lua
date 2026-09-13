@@ -1,19 +1,3 @@
-local function current_cell_bounds()
-    local start = vim.fn.search("^# %%", "bcnW")
-    local stop = vim.fn.search("^# %%", "nW")
-
-    if start == 0 then
-        start = 1
-    end
-
-    if stop == 0 then
-        stop = vim.api.nvim_buf_line_count(0)
-    else
-        stop = stop - 1
-    end
-
-    return start, stop
-end
 
 local function evaluate_line()
     require("config.molten_kernel").with_kernel(function(kernel)
@@ -22,45 +6,17 @@ local function evaluate_line()
 end
 
 local function evaluate_current_cell()
-    require("config.molten_kernel").with_kernel(function(kernel)
-        local start, stop = current_cell_bounds()
-        local ok, err = pcall(vim.fn.MoltenEvaluateRange, kernel, start, stop)
-        if not ok then
-            vim.notify("Molten range evaluation failed: " .. tostring(err), vim.log.levels.ERROR)
-        end
+    require("config.molten_kernel").with_kernel(function()
+        vim.cmd "MoltenEvaluateCell"
     end)
 end
 
 local function evaluate_all_cells()
     require("config.molten_kernel").with_kernel(function(kernel)
         local line_count = vim.api.nvim_buf_line_count(0)
-        local markers = {}
-
-        for line = 1, line_count do
-            if vim.api.nvim_buf_get_lines(0, line - 1, line, false)[1]:match "^# %%" then
-                markers[#markers + 1] = line
-            end
-        end
-
-        if #markers == 0 then
-            local ok, err = pcall(vim.fn.MoltenEvaluateRange, kernel, 1, line_count)
-            if not ok then
-                vim.notify("Molten range evaluation failed: " .. tostring(err), vim.log.levels.ERROR)
-            end
-            return
-        end
-
-        if markers[1] > 1 then
-            table.insert(markers, 1, 1)
-        end
-
-        for index, start in ipairs(markers) do
-            local stop = markers[index + 1] and markers[index + 1] - 1 or line_count
-            local ok, err = pcall(vim.fn.MoltenEvaluateRange, kernel, start, stop)
-            if not ok then
-                vim.notify("Molten range evaluation failed: " .. tostring(err), vim.log.levels.ERROR)
-                return
-            end
+        local ok, err = pcall(vim.fn.MoltenEvaluateRange, kernel, 1, line_count)
+        if not ok then
+            vim.notify("Molten range evaluation failed: " .. tostring(err), vim.log.levels.ERROR)
         end
     end)
 end
@@ -70,33 +26,6 @@ local function evaluate_visual()
         vim.api.nvim_cmd({ cmd = "MoltenEvaluateVisual", args = { kernel } }, {})
     end)
 end
-
-local function is_quarto_buffer()
-    return vim.bo.filetype == "quarto" or vim.bo.filetype == "qmd"
-end
-
-local function run_current_notebook_cell()
-    if is_quarto_buffer() then
-        require("config.molten_kernel").with_kernel(function()
-            require("quarto.runner").run_cell()
-        end)
-        return
-    end
-
-    evaluate_current_cell()
-end
-
-local function run_all_notebook_cells()
-    if is_quarto_buffer() then
-        require("config.molten_kernel").with_kernel(function()
-            require("quarto.runner").run_all()
-        end)
-        return
-    end
-
-    evaluate_all_cells()
-end
-
 return { -- 1) Molten
     {
         "benlubas/molten-nvim",
@@ -248,13 +177,13 @@ return { -- 1) Molten
             },
             {
                 "<F5>",
-                run_current_notebook_cell,
-                desc = "Run current notebook cell (F5)",
+                evaluate_current_cell,
+                desc = "Run current cell (F5)",
             },
             {
                 "<F10>",
-                run_all_notebook_cells,
-                desc = "Run all notebook cells (F10)",
+                evaluate_all_cells,
+                desc = "Run all cells (F10)",
             },
         },
     },
