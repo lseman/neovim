@@ -152,6 +152,10 @@ return {
                 group = "󰔃 ui / toggles",
             },
             {
+                "<leader>T",
+                desc = "Theme Picker",
+            },
+            {
                 "<leader>w",
                 group = "󰖲 workspace / write",
             },

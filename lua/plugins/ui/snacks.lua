@@ -483,6 +483,13 @@ return {
             desc = "Registers",
         },
         {
+            "<leader>T",
+            function()
+                require("config.themes").toggle()
+            end,
+            desc = "Theme Picker",
+        },
+        {
             "<leader>s/",
             function()
                 Snacks.picker.search_history()
