@@ -279,13 +279,6 @@ hl("DashboardIcon", { fg = "blue" })
 -- ── Treesitter Context ──────────────────────────────────────────────────────
 hl("TSCurrentContext", { fg = "orange", bg = "bg_highlight" })
 
--- ── Telescope ───────────────────────────────────────────────────────────────
-hl("TelescopeBorder", { fg = "fg_dim", bg = "bg_highlight" })
-hl("TelescopeTitle", { fg = "blue", bg = "bg_highlight" })
-hl("TelescopePreviewTitle", { fg = "green", bg = "bg_highlight" })
-hl("TelescopePromptTitle", { fg = "red", bg = "bg_highlight" })
-hl("TelescopeResultsTitle", { fg = "cyan", bg = "bg_highlight" })
-
 -- ── Trouble / Diagnostic List ───────────────────────────────────────────────
 hl("TroubleNormal", { fg = "fg", bg = "bg_highlight" })
 hl("TroubleCount", { fg = "blue" })

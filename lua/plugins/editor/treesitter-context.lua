@@ -27,7 +27,6 @@ return {
                 "Trouble",
                 "lazy",
                 "mason",
-                "TelescopePrompt",
                 "toggleterm",
                 "spectre_panel",
             }

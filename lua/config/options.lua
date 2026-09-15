@@ -116,12 +116,10 @@ vim.opt.shortmess:append "Ic"
 vim.opt.sessionoptions:append "globals"
 
 -- ============================
--- nvim-ufo Folds
+-- Native Folding (Treesitter + LSP)
 -- ============================
-vim.opt.foldmethod = "expr"
-vim.opt.foldexpr = "v:lua.ufo.getFoldExpr()"
-vim.opt.foldtext = ""
-vim.opt.foldnestmax = 20
-vim.opt.foldlevel = 99
-vim.opt.foldlevelstart = 99
-vim.opt.foldcolumn = "1"
+vim.o.foldmethod = "expr"
+vim.o.foldexpr = "v:lua.vim.treesitter.foldexpr()"
+vim.o.foldlevel = 99
+vim.o.foldlevelstart = 99
+vim.o.foldcolumn = "1"

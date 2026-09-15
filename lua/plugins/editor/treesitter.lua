@@ -28,7 +28,6 @@ local ensure_installed = {
 }
 
 local excluded_filetypes = {
-    TelescopePrompt = true,
     snacks_picker_list = true,
     lazy = true,
     mason = true,

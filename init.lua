@@ -58,7 +58,6 @@ local modules = {
   "config.keymaps",
   "config.cheatsheet",
   "config.workflows",
-  "config.cmp",
 }
 
 for _, mod in ipairs(modules) do

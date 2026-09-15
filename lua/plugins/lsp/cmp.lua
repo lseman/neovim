@@ -52,7 +52,7 @@ local autopairs_spec = {
             highlight = "PmenuSel",
             highlight_grey = "LineNr",
         },
-        disable_filetype = { "TelescopePrompt", "vim", "spectre_panel", "dap-repl" },
+        disable_filetype = { "vim", "spectre_panel", "dap-repl" },
         enable_moveright = true,
         enable_afterquote = true,
         enable_check_bracket_line = true,

@@ -8,7 +8,7 @@ A modern, state-of-the-art Neovim configuration built for productivity, featurin
 - **Blazing Fast File Search**: `fff.nvim` - the fastest and most accurate file search SDK
 - **Modern Completion**: `blink.cmp` with `LuaSnip` and `nvim-autopairs`
 - **Polished UI**: `snacks.nvim` dashboard, picker, explorer, and more
-- **Intelligent Folding**: `nvim-ufo` with Treesitter provider
+- **Intelligent Folding**: Native Treesitter + LSP folding (textDocument/foldingRange)
 - **LSP & Formatting**: `conform.nvim` + `nvim-lint` for formatting and linting
 - **Git Integration**: `gitsigns.nvim`, `neogit`, and `fugitive`
 - **Notebook Support**: `molten.nvim`, `jupytext`, `quarto`, and `otter.nvim`
@@ -28,7 +28,7 @@ A modern, state-of-the-art Neovim configuration built for productivity, featurin
 - `nvim-tree/nvim-web-devicons.lua` - File icons
 - `folke/trouble.nvim` - Diagnostics, quickfix, and loclist viewer
 - `folke/todo-comments.nvim` - TODO/FIXME/HACK/NOTE highlighting and navigation
-- `kevinhwang91/nvim-ufo` - Intelligent folding with Treesitter
+
 - `stevearc/bqf.nvim` - Better quickfix window
 - `j-hui/fidget.nvim` - LSP progress notifications
 - `nacro90/numb.nvim` - Show number on statusline on motion
@@ -43,8 +43,7 @@ A modern, state-of-the-art Neovim configuration built for productivity, featurin
 - `echasnovski/mini.nvim` - Library of independent Lua modules
 - `echasnovski/mini.map` - Mini map integration
 - `mfussenegger/nvim-dap` - Debug Adapter Protocol client
-- `nvim-telescope/telescope.nvim` - Find, Filter, Preview, Pick
-- `ibhagwan/fzf-lua` - Improved fzf.vim written in lua
+
 - `stevearc/grug-far.nvim` - Global search and replace
 
 ### LSP & Formatting
@@ -231,7 +230,7 @@ This configuration uses the current state-of-the-art Neovim ecosystem:
 - **File Search**: `dmtrKovalenko/fff.nvim`
 - **AI Integration**: `CopilotChat.nvim`
 - **Formatting/Linting**: `stevearc/conform.nvim` + `mfussenegger/nvim-lint`
-- **Folding**: `kevinhwang91/nvim-ufo` with Treesitter
+- **Folding**: Native Treesitter + LSP (textDocument/foldingRange)
 - **Motion/Search**: `folke/flash.nvim`
 - **Keymaps Help**: `folke/which-key.nvim`
 

@@ -44,7 +44,6 @@ return {
                 hgcommit = false,
                 svn = false,
                 cvs = false,
-                ["TelescopePrompt"] = false,
                 ["dap-repl"] = false,
                 [""] = false,
             },

@@ -60,15 +60,6 @@ return {
                 end
             end
 
-            vim.keymap.set("n", "<leader>uh", function()
-                local enabled = vim.lsp.inlay_hint.is_enabled({
-                    bufnr = 0,
-                })
-                vim.lsp.inlay_hint.enable(not enabled, {
-                    bufnr = 0,
-                })
-            end, { desc = "Toggle Inlay Hints" })
-
             local ok_clangd, clangd_extensions = pcall(require, "clangd_extensions")
             if ok_clangd then
                 clangd_extensions.setup({})

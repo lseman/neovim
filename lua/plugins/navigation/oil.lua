@@ -181,7 +181,7 @@ local function refresh_git_status(bufnr)
     end)
 end
 
-local function fzf_jump(bufnr)
+local function jump_to_file(bufnr)
     local oil = require("oil")
     local dir = oil.get_current_dir(bufnr)
     if not dir then
@@ -189,14 +189,16 @@ local function fzf_jump(bufnr)
     end
     local dir_norm = vim.fs.normalize(dir):gsub("/+$", "")
 
-    require("fzf-lua").files({
+    Snacks.picker.files({
         cwd = dir,
+        title = "Jump to file",
         actions = {
-            ["default"] = function(selected, opts)
-                if not selected[1] then
+            default = function(entries)
+                local entry = entries[1]
+                if not entry then
                     return
                 end
-                local file_path = require("fzf-lua.path").entry_to_file(selected[1], opts).path
+                local file_path = entry.value
                 if not file_path then
                     return
                 end
@@ -207,8 +209,8 @@ local function fzf_jump(bufnr)
                     oil.open(target_dir)
                 else
                     for lnum = 1, vim.api.nvim_buf_line_count(bufnr) do
-                        local entry = oil.get_entry_on_line(bufnr, lnum)
-                        if entry and entry.name == target_name then
+                        local e = oil.get_entry_on_line(bufnr, lnum)
+                        if e and e.name == target_name then
                             vim.api.nvim_win_set_cursor(0, {lnum, 0})
                             break
                         end
@@ -222,7 +224,7 @@ end
 return {{
     "stevearc/oil.nvim",
     event = "VeryLazy",
-    dependencies = {"nvim-tree/nvim-web-devicons", "ibhagwan/fzf-lua"},
+    dependencies = {"nvim-tree/nvim-web-devicons"},
     keys = {{
         "<leader>-",
         function()
@@ -358,7 +360,7 @@ return {{
             },
             ["<C-f>"] = {
                 function()
-                    fzf_jump(vim.api.nvim_get_current_buf())
+                    jump_to_file(vim.api.nvim_get_current_buf())
                 end,
                 mode = "n",
                 desc = "Fuzzy jump to file/dir"

@@ -1,18 +1,5 @@
 vim.g.snacks_animate = false
 
-local function toggle_explorer()
-    local open = Snacks.picker.get({
-        source = "explorer",
-    })
-    if #open > 0 then
-        for _, picker in ipairs(open) do
-            picker:close()
-        end
-        return
-    end
-    Snacks.explorer()
-end
-
 return {
     "folke/snacks.nvim",
     event = "User FilePost",

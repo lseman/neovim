@@ -3,7 +3,6 @@ return {
     { import = "plugins.ui.bqf" },
     { import = "plugins.ui.colorizer" },
     { import = "plugins.ui.fidget" },
-    { import = "plugins.ui.nvim-ufo" },
     { import = "plugins.ui.lualine" },
     { import = "plugins.ui.nvim-web-devicons" },
     { import = "plugins.ui.snacks" },

@@ -168,24 +168,15 @@ autocmd("BufReadPre", {
     desc = "Disable expensive features for large files"
 })
 
--- nvim-ufo setup
-
--- nvim-ufo: attach new file buffers (skip dashboard/nofile/special/terminal)
-autocmd("BufWinEnter", {
-    group = group "Ufo",
-    pattern = "*",
+-- LSP folding: switch to LSP foldexpr/foldtext when server supports textDocument/foldingRange
+vim.api.nvim_create_autocmd("LspAttach", {
     callback = function(args)
-        local buftype = vim.api.nvim_buf_get_option(args.buf, "buftype")
-        local ft = vim.api.nvim_buf_get_option(args.buf, "filetype")
-        local name = vim.api.nvim_buf_get_name(args.buf)
-        -- Skip nofile, terminal, dashboard, yazi, and buffers without a file path
-        if buftype == "nofile" or buftype == "terminal" or ft == "dashboard" or ft == "snacks_dashboard" or name == "" or
-            name:match "^%w+://" then
-            return
+        local client = vim.lsp.get_client_by_id(args.data.client_id)
+        if client and client:supports_method("textDocument/foldingRange") then
+            vim.wo.foldexpr = "v:lua.vim.lsp.foldexpr()"
+            vim.wo.foldtext = "v:lua.vim.lsp.foldtext()"
         end
-        vim.b[args.buf].ufo = true
     end,
-    desc = "Enable nvim-ufo for file buffers"
 })
 -- ============================================================
 -- TSInstallAll: install all Treesitter parsers from ensure_installed list
