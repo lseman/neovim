@@ -1,6 +1,90 @@
 local git_ns = vim.api.nvim_create_namespace("OilGitStatus")
 local git_cache = {}
 
+local function setup_oil_git_highlights()
+    vim.api.nvim_set_hl(0, "OilGitAdded", {
+        fg = "#98c379",
+        bold = true
+    })
+
+    vim.api.nvim_set_hl(0, "OilGitModified", {
+        fg = "#e5c07b",
+        bold = true
+    })
+
+    vim.api.nvim_set_hl(0, "OilGitDeleted", {
+        fg = "#e06c75",
+        bold = true
+    })
+
+    vim.api.nvim_set_hl(0, "OilGitUntracked", {
+        fg = "#56b6c2",
+        bold = true
+    })
+
+    vim.api.nvim_set_hl(0, "OilGitIgnored", {
+        fg = "#5c6370"
+    })
+
+    vim.api.nvim_set_hl(0, "OilGitRenamed", {
+        fg = "#c678dd",
+        bold = true
+    })
+
+    vim.api.nvim_set_hl(0, "OilGitConflict", {
+        fg = "#ff6c6b",
+        bold = true
+    })
+end
+
+setup_oil_git_highlights()
+
+vim.api.nvim_create_autocmd("ColorScheme", {
+    callback = setup_oil_git_highlights
+})
+
+local function git_status_style(xy)
+    -- Merge conflicts: highest priority
+    if xy:find("U", 1, true) or xy == "AA" or xy == "DD" then
+        return "U", "OilGitConflict", 100
+    end
+
+    -- Ignored
+    if xy == "!!" then
+        return "!", "OilGitIgnored", 10
+    end
+
+    -- Untracked
+    if xy == "??" then
+        return "?", "OilGitUntracked", 30
+    end
+
+    local x = xy:sub(1, 1)
+    local y = xy:sub(2, 2)
+
+    -- Deleted
+    if x == "D" or y == "D" then
+        return "D", "OilGitDeleted", 90
+    end
+
+    -- Renamed
+    if x == "R" then
+        return "R", "OilGitRenamed", 80
+    end
+
+    -- Added
+    if x == "A" then
+        return "A", "OilGitAdded", 70
+    end
+
+    -- Modified / type changed
+    if x == "M" or y == "M" or x == "T" or y == "T" then
+        return "M", "OilGitModified", 60
+    end
+
+    return "•", "OilGitModified", 20
+end
+
 local function refresh_git_status(bufnr)
     local oil = require("oil")
     local dir = oil.get_current_dir(bufnr)
@@ -76,10 +160,14 @@ local function refresh_git_status(bufnr)
                             else
                                 hl = "GitSignsChange"
                             end
-                            local sign_char = xy:gsub(" ", ""):sub(1, 1)
+                            local sign_char, hl, priority = git_status_style(xy)
+
                             local key = (is_nested ~= "" and is_nested ~= nil) and (direct .. "/") or direct
-                            if not statuses[key] then
-                                statuses[key] = {sign_char, hl}
+
+                            local current = statuses[key]
+
+                            if not current or priority > current[3] then
+                                statuses[key] = {sign_char, hl, priority}
                             end
                         end
                     end
@@ -190,9 +278,13 @@ return {{
         },
         win_options = {
             winhighlight = "Normal:Normal,FloatBorder:FloatBorder,CursorLine:Visual,CursorLineNr:Visual",
-            signcolumn = "yes",
+
             number = true,
             relativenumber = true,
+
+            signcolumn = "yes",
+            statuscolumn = "%=%{v:relnum == 0 ? v:lnum : v:relnum} %s ",
+
             foldenable = false,
             cursorcolumn = false,
             foldcolumn = "0",
