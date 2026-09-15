@@ -32,9 +32,9 @@ return function()
             preset = "default",
             ["<Tab>"] = {
                 function(cmp)
-                    local ok, suggestion = pcall(require, "copilot.suggestion")
-                    if ok and suggestion and suggestion.is_visible() then
-                        suggestion.accept()
+                    local active = vim.lsp.inline_completion.get_active()
+                    if active then
+                        vim.lsp.inline_completion.accept_next()
                         return true
                     end
 
