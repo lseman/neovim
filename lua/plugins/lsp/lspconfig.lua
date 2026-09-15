@@ -53,11 +53,6 @@ return {
                 map("n", "<leader>dl", vim.diagnostic.open_float, "Line diag")
                 map("n", "]d", diagnostic_jump(1), "Next diagnostic")
                 map("n", "[d", diagnostic_jump(-1), "Prev diagnostic")
-
-                -- Enable inlay hints with better defaults
-                if client:supports_method("textDocument/inlayHint", bufnr) then
-                    vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
-                end
             end
 
             local ok_clangd, clangd_extensions = pcall(require, "clangd_extensions")
