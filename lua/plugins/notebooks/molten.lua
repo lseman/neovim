@@ -6,7 +6,9 @@ local function evaluate_line()
 end
 
 local function evaluate_current_cell()
-    require("quarto.runner").run_cell()
+    require("config.molten_kernel").with_kernel(function()
+        require("quarto.runner").run_cell()
+    end)
 end
 
 local function evaluate_all_cells()
