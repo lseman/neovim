@@ -21,9 +21,7 @@ return {
             render_modes = { "n", "c" }, -- render in normal + command mode only (not insert)
             latex = {
                 enabled = true,
-                -- Better converters (try in this order)
-                converter = { "latex2text" }, -- ← Change this
-                -- converter = "latex2text",              -- or just one
+                converter = { "latex2text" },
                 position = "center", -- or "above" / "below" / "center"
                 top_pad = 0,
                 bottom_pad = 0,

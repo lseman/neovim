@@ -27,6 +27,11 @@ return {
                 max_width = 80,
                 max_height = 40,
             },
+            -- render-markdown.nvim (latex2text) handles $...$/$$...$$ instead;
+            -- keeps plot/image display working while avoiding double-rendering.
+            math = {
+                enabled = false,
+            },
             img_dirs = { "img", "images", "assets", "static", "public", "media", "attachments" },
             formats = {
                 "png",
