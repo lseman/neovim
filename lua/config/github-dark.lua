@@ -102,6 +102,7 @@ hl("DiagnosticDeprecated", { fg = "fg_dim", strikethrough = true })
 hl("GitSignsAdd", { fg = "green" })
 hl("GitSignsChange", { fg = "orange" })
 hl("GitSignsDelete", { fg = "red" })
+hl("GitSignsUntracked", { fg = "yellow" })
 hl("GitSignsCurrentLineBlame", { fg = "fg_dim" })
 
 -- ── Treesitter ──────────────────────────────────────────────────────────────
