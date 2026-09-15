@@ -125,6 +125,18 @@ autocmd("FileType", {
     desc = "Do not continue comments on new lines"
 })
 
+-- Prose filetypes: wrap, linebreak, spell
+autocmd("FileType", {
+    group = group "ProseOptions",
+    pattern = { "markdown", "quarto", "tex", "text", "gitcommit" },
+    callback = function()
+        vim.opt_local.wrap = true
+        vim.opt_local.linebreak = true
+        vim.opt_local.spell = true
+    end,
+    desc = "Enable wrap/spell for prose filetypes"
+})
+
 autocmd("BufReadPost", {
     group = group "RestoreCursor",
     callback = restore_cursor,
