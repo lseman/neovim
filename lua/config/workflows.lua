@@ -112,7 +112,7 @@ local function setup_user_commands()
             { "snacks", "Snacks" },
             { "blink.cmp", "Blink cmp" },
             { "conform", "Conform" },
-            { "lint", "nvim-lint" },
+
             { "render-markdown", "Markdown renderer" },
             { "grug-far", "GrugFar" },
             { "kulala", "Kulala" },

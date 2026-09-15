@@ -9,7 +9,7 @@ A modern, state-of-the-art Neovim configuration built for productivity, featurin
 - **Modern Completion**: `blink.cmp` with `LuaSnip` and `nvim-autopairs`
 - **Polished UI**: `snacks.nvim` dashboard, picker, explorer, and more
 - **Intelligent Folding**: Native Treesitter + LSP folding (textDocument/foldingRange)
-- **LSP & Formatting**: `conform.nvim` + `nvim-lint` for formatting and linting
+- **LSP & Formatting**: `conform.nvim` for formatting
 - **Git Integration**: `gitsigns.nvim`, `neogit`, and `fugitive`
 - **Notebook Support**: `molten.nvim`, `jupytext`, `quarto`, and `otter.nvim`
 - **HTTP Client**: `kulala.nvim` for API testing
@@ -49,7 +49,6 @@ A modern, state-of-the-art Neovim configuration built for productivity, featurin
 ### LSP & Formatting
 - `neovim/nvim-lspconfig` - Quickstart configs for Nvim LSP
 - `stevearc/conform.nvim` - Lightweight yet powerful formatter plugin
-- `mfussenegger/nvim-lint` - Linting plugin
 - `folke/lazydev.nvim` - Lua LSP for Neovim
 
 ### Git Integration
@@ -229,7 +228,7 @@ This configuration uses the current state-of-the-art Neovim ecosystem:
 - **UI Framework**: `folke/snacks.nvim`
 - **File Search**: `dmtrKovalenko/fff.nvim`
 - **AI Integration**: `CopilotChat.nvim`
-- **Formatting/Linting**: `stevearc/conform.nvim` + `mfussenegger/nvim-lint`
+- **Formatting**: `stevearc/conform.nvim`
 - **Folding**: Native Treesitter + LSP (textDocument/foldingRange)
 - **Motion/Search**: `folke/flash.nvim`
 - **Keymaps Help**: `folke/which-key.nvim`
