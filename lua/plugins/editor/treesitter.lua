@@ -113,9 +113,17 @@ return {
                     return
                 end
 
-                local name = vim.api.nvim_buf_get_name(args.buf)
-                local stat = name ~= "" and vim.uv.fs_stat(name) or nil
-                if stat and stat.size > 200 * 1024 then
+                -- Measure the buffer's own content, not the file on disk: a
+                -- jupytext-converted notebook keeps its buffer name pointing
+                -- at the original .ipynb (often multi-MB with embedded
+                -- output images) while the displayed qmd/markdown content is
+                -- tiny. Stat-ing the file name skipped treesitter entirely
+                -- for any such notebook, which looked like broken/missing
+                -- syntax highlighting with no relation to the actual size
+                -- of what's on screen.
+                local line_count = vim.api.nvim_buf_line_count(args.buf)
+                local ok_size, byte_size = pcall(vim.api.nvim_buf_get_offset, args.buf, line_count)
+                if ok_size and byte_size > 200 * 1024 then
                     return
                 end
 
@@ -126,6 +134,68 @@ return {
                 end
             end,
             desc = "Enable Tree-sitter highlighting and indentation",
+        })
+
+        -- Markdown/Quarto: a fenced code block added after an existing one
+        -- (e.g. a ```{python} cell appended below a ```{bash} cell) can end
+        -- up correctly parsed — the injected language tree and its query
+        -- captures are right — but never actually painted, because the
+        -- highlighter only populates extmarks for rows a window redraw has
+        -- touched, and a newly created injection wasn't part of any redraw
+        -- yet. Force a full reparse + redraw shortly after edits so new
+        -- fences light up immediately instead of waiting for a scroll.
+        local reparse_timers = {}
+        vim.api.nvim_create_autocmd("FileType", {
+            group = group,
+            pattern = { "markdown", "quarto" },
+            callback = function(args)
+                local bufnr = args.buf
+                if vim.b[bufnr].ts_reparse_attached then
+                    return
+                end
+                vim.b[bufnr].ts_reparse_attached = true
+
+                vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI", "InsertLeave" }, {
+                    group = group,
+                    buffer = bufnr,
+                    callback = function()
+                        local timer = reparse_timers[bufnr]
+                        if timer then
+                            timer:stop()
+                            timer:close()
+                        end
+                        timer = vim.uv.new_timer()
+                        reparse_timers[bufnr] = timer
+                        timer:start(
+                            150,
+                            0,
+                            vim.schedule_wrap(function()
+                                reparse_timers[bufnr] = nil
+                                local ok, parser = pcall(vim.treesitter.get_parser, bufnr)
+                                if ok and parser then
+                                    parser:parse(true)
+                                    vim.cmd "redraw"
+                                end
+                            end)
+                        )
+                    end,
+                })
+
+                vim.api.nvim_create_autocmd("BufDelete", {
+                    group = group,
+                    buffer = bufnr,
+                    once = true,
+                    callback = function()
+                        local timer = reparse_timers[bufnr]
+                        if timer then
+                            timer:stop()
+                            timer:close()
+                            reparse_timers[bufnr] = nil
+                        end
+                    end,
+                })
+            end,
+            desc = "Force full reparse+redraw so new markdown/quarto code-fence injections highlight immediately",
         })
 
         -- `main` nvim-treesitter also dropped incremental_selection. This is

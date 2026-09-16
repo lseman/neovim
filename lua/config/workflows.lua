@@ -1,6 +1,7 @@
 local M = {}
 
 local venv_activated_callbacks = {}
+local active_bin_dir = nil
 
 local function on_venv_activated(fn)
     table.insert(venv_activated_callbacks, fn)
@@ -9,9 +10,23 @@ end
 M.on_venv_activated = on_venv_activated
 
 local function activate_venv(venv_dir)
+    if vim.env.VIRTUAL_ENV == venv_dir then
+        return
+    end
+
+    -- NOTE: do NOT override python3_host_prog here; the remote plugin host
+    -- is already running by this point and changing it has no effect.
+    -- System python3 (set in init.lua) must have pynvim installed.
     local venv_bin = venv_dir .. "/bin"
+    if active_bin_dir then
+        -- Strip the previously-activated venv's bin dir so switching
+        -- projects doesn't pile up stale entries ahead of the new one.
+        vim.env.PATH = (vim.env.PATH or ""):gsub(vim.pesc(active_bin_dir) .. ":", "")
+    end
     vim.env.PATH = venv_bin .. ":" .. vim.env.PATH
     vim.env.VIRTUAL_ENV = venv_dir
+    active_bin_dir = venv_bin
+
     vim.schedule(function()
         for _, fn in ipairs(venv_activated_callbacks) do
             pcall(fn, venv_dir)
@@ -19,29 +34,43 @@ local function activate_venv(venv_dir)
     end)
 end
 
-local function detect_and_activate_venv()
-    local cwd = vim.uv.cwd() or vim.fn.getcwd()
-    local candidates = { ".venv", "venv", ".env", "env" }
+local venv_candidates = { ".venv", "venv", ".env", "env" }
 
-    while cwd and cwd ~= "/" do
-        for _, name in ipairs(candidates) do
-            local dir = cwd .. "/" .. name
-            local py = dir .. "/bin/python"
+local function find_venv(start_dir)
+    local dir = start_dir
+    while dir and dir ~= "/" do
+        for _, name in ipairs(venv_candidates) do
+            local venv_dir = dir .. "/" .. name
+            local py = venv_dir .. "/bin/python"
             if vim.fn.executable(py) == 1 then
-                -- NOTE: do NOT override python3_host_prog here; the remote
-                -- plugin host is already running by this point and changing
-                -- it has no effect.  System python3 (set in init.lua) must
-                -- have pynvim installed.
-                activate_venv(dir)
-                local version = vim.fn.systemlist(py .. " --version 2>&1")[1] or "unknown"
-                require("config.env").notify_loaded(dir, version)
-                return true
+                return venv_dir, py
             end
         end
-        cwd = vim.fn.fnamemodify(cwd, ":h")
+        dir = vim.fn.fnamemodify(dir, ":h")
+    end
+    return nil
+end
+
+-- Activate the venv found by walking up from `start_dir`, if any, and if
+-- it differs from whatever venv is currently active. Returns true if a
+-- venv (new or already-active) covers `start_dir`.
+local function activate_venv_for_dir(start_dir)
+    local venv_dir, py = find_venv(start_dir)
+    if not venv_dir then
+        return false
+    end
+    if venv_dir == vim.env.VIRTUAL_ENV then
+        return true
     end
 
-    return false
+    activate_venv(venv_dir)
+    local version = vim.fn.systemlist(py .. " --version 2>&1")[1] or "unknown"
+    require("config.env").notify_loaded(venv_dir, version)
+    return true
+end
+
+local function detect_and_activate_venv()
+    return activate_venv_for_dir(vim.uv.cwd() or vim.fn.getcwd())
 end
 
 local function select_current_cell()
@@ -189,6 +218,26 @@ function M.setup()
             detect_and_activate_venv()
         end,
     })
+
+    -- Re-detect per-buffer: a notebook/script opened from a different
+    -- project than the one Neovim started in needs its own venv on PATH.
+    -- Without this, jupytext.nvim's ipynb<->qmd conversion silently uses
+    -- whichever venv (or system PATH) happened to be active at startup —
+    -- if that one lacks `quarto`/`jupytext`, conversion fails or falls
+    -- back to a stale paired file, which looks like broken cell detection.
+    --
+    -- Uses BufAdd, not BufReadPre: jupytext.nvim owns BufReadCmd for
+    -- *.ipynb, and a custom BufReadCmd suppresses BufReadPre/Post entirely
+    -- for that buffer. BufAdd still fires beforehand regardless.
+    vim.api.nvim_create_autocmd("BufAdd", {
+        group = vim.api.nvim_create_augroup("PerBufferVenvDetect", { clear = true }),
+        pattern = { "*.ipynb", "*.qmd", "*.py" },
+        callback = function(args)
+            activate_venv_for_dir(vim.fn.fnamemodify(args.file, ":p:h"))
+        end,
+        desc = "Activate the venv matching this buffer's project",
+    })
+
     setup_runner_maps()
     setup_user_commands()
 end
