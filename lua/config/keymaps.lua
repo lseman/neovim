@@ -327,7 +327,7 @@ map(
 
 map(
     "n",
-    "<F8>",
+    "<F9>",
     function()
         local bufnr = 0
         local line = vim.api.nvim_win_get_cursor(0)[1] - 1

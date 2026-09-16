@@ -32,9 +32,7 @@ return function()
             preset = "default",
             ["<Tab>"] = {
                 function(cmp)
-                    local ok, suggestion = pcall(require, "copilot.suggestion")
-                    if ok and suggestion and suggestion.is_visible() then
-                        suggestion.accept()
+                    if vim.lsp.inline_completion.get() then
                         return true
                     end
 
@@ -47,6 +45,18 @@ return function()
             },
             ["<C-p>"] = { "select_prev", "fallback" },
             ["<C-n>"] = { "select_next", "fallback" },
+            ["<M-]>"] = {
+                function()
+                    vim.lsp.inline_completion.select { count = 1 }
+                end,
+                "fallback",
+            },
+            ["<M-[>"] = {
+                function()
+                    vim.lsp.inline_completion.select { count = -1 }
+                end,
+                "fallback",
+            },
             ["<C-b>"] = { function(cmp)
                     return cmp.scroll_documentation_up()
                 end, "fallback" },

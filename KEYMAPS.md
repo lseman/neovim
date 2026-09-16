@@ -200,14 +200,14 @@
 | `<C-W><C-D>` | Show diagnostics under the cursor | global | `<C-W>d` |
 | `<C-W>d` | Show diagnostics under the cursor | global | `lua/callback` |
 | `<CR>` | Dashboard action | buffer | `lua/callback` |
-| `<F10>` | Run all notebook cells (F10) | global | `lua/callback` |
 | `<F2>` | Harpoon: Add file | global | `lua/callback` |
 | `<F3>` | Harpoon: Remove current | global | `lua/callback` |
 | `<F4>` | Harpoon: List | global | `lua/callback` |
 | `<F5>` | Run current notebook cell (F5) | global | `lua/callback` |
-| `<F6>` | Toggle avante | global | `<Cmd>AvanteToggle<CR>` |
-| `<F7>` | Select Copilot Chat model | global | `lua/callback` |
-| `<F8>` | Show code actions | global | `lua/callback` |
+| `<F6>` | Run all notebook cells (F6) | global | `lua/callback` |
+| `<F7>` | Next cell (F7) | quarto/qmd | `lua/callback` |
+| `<F8>` | Previous cell (F8) | quarto/qmd | `lua/callback` |
+| `<F9>` | Show code actions | global | `lua/callback` |
 | `<Plug>(nvim-dir-open)` | Open directory entry | global | `lua/callback` |
 | `<Plug>(nvim-dir-reload)` | Reload directory | global | `lua/callback` |
 | `<Plug>(nvim-dir-up)` | Open parent directory | global | `lua/callback` |

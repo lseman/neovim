@@ -144,12 +144,12 @@ M.open = function()
     border = "rounded",
   })
 
-  api.nvim_win_set_option(win, "wrap", false)
-  api.nvim_win_set_option(win, "cursorline", false)
-  api.nvim_win_set_option(win, "number", false)
-  api.nvim_win_set_option(win, "relativenumber", false)
-  api.nvim_win_set_option(win, "signcolumn", "no")
-  api.nvim_win_set_option(win, "foldenable", false)
+  vim.wo[win].wrap = false
+  vim.wo[win].cursorline = false
+  vim.wo[win].number = false
+  vim.wo[win].relativenumber = false
+  vim.wo[win].signcolumn = "no"
+  vim.wo[win].foldenable = false
 
   vim.bo[buf].buftype = "nofile"
   vim.bo[buf].bufhidden = "wipe"

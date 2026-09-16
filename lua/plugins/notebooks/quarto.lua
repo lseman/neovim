@@ -234,5 +234,19 @@ return {
             end,
             desc = "Quarto: Previous code block",
         },
+        {
+            "<F7>",
+            function()
+                goto_quarto_block(nil, false)
+            end,
+            desc = "Next cell (F7)",
+        },
+        {
+            "<F8>",
+            function()
+                goto_quarto_block(nil, true)
+            end,
+            desc = "Previous cell (F8)",
+        },
     },
 }

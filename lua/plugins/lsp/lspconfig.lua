@@ -8,7 +8,7 @@ return {
             {
                 "williamboman/mason-lspconfig.nvim",
                 opts = {
-                    ensure_installed = { "basedpyright", "ruff", "lua_ls", "biome" },
+                    ensure_installed = { "basedpyright", "ruff", "lua_ls", "biome", "copilot" },
                     automatic_enable = true,
                 },
             },
@@ -110,15 +110,34 @@ return {
             })
 
             vim.lsp.config("vhdl_ls", {
-                root_dir = function(fname)
-                    local util = require "lspconfig/util"
-                    return util.root_pattern("vhdl_ls.toml", "Makefile", "src", "rtl", "lib")(fname)
-                        or util.find_git_ancestor(fname)
-                        or vim.fn.getcwd()
-                end,
+                root_markers = { { "vhdl_ls.toml", "Makefile", "src", "rtl", "lib" }, ".git" },
             })
 
-            vim.lsp.enable({ "basedpyright", "ruff", "clangd", "lua_ls", "biome" })
+            vim.lsp.enable({ "basedpyright", "ruff", "clangd", "lua_ls", "biome", "vhdl_ls", "copilot" })
+
+            -- Native LSP inline completion (0.12): copilot-language-server (via
+            -- nvim-lspconfig's bundled `lsp/copilot.lua`) speaks
+            -- textDocument/inlineCompletion, so no ghost-text plugin is needed.
+            local copilot_disabled_filetypes = {
+                yaml = true,
+                markdown = true,
+                help = true,
+                gitcommit = true,
+                gitrebase = true,
+                ["dap-repl"] = true,
+            }
+            vim.api.nvim_create_autocmd("LspAttach", {
+                callback = function(args)
+                    local client = vim.lsp.get_client_by_id(args.data.client_id)
+                    if not client or not client:supports_method "textDocument/inlineCompletion" then
+                        return
+                    end
+                    if copilot_disabled_filetypes[vim.bo[args.buf].filetype] then
+                        return
+                    end
+                    vim.lsp.inline_completion.enable(true, { bufnr = args.buf })
+                end,
+            })
 
             require("cmake-tools").setup({
                 cmake_build_directory = "build",

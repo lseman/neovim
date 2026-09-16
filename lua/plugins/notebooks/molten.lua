@@ -181,9 +181,9 @@ return { -- 1) Molten
                 desc = "Run current cell (F5)",
             },
             {
-                "<F10>",
+                "<F6>",
                 evaluate_all_cells,
-                desc = "Run all cells (F10)",
+                desc = "Run all cells (F6)",
             },
         },
     },
