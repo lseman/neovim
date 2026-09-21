@@ -4,17 +4,52 @@
 local M = {}
 local api = vim.api
 
+-- ── Persistence ──────────────────────────────────────────────────────────
+-- Remembers the last theme picked so init.lua can re-apply it on the next
+-- startup instead of always falling back to the hardcoded default.
+local STATE_FILE = vim.fn.stdpath "data" .. "/theme_picker_last.txt"
+
+M.save_theme = function(name)
+    local f = io.open(STATE_FILE, "w")
+    if not f then return end
+    f:write(name, "\n", vim.o.background or "dark")
+    f:close()
+end
+
+-- Returns saved_name, saved_background (either may be nil if nothing was
+-- ever saved, or the state file is missing/empty).
+M.load_saved_theme = function()
+    local f = io.open(STATE_FILE, "r")
+    if not f then return nil end
+    local name = f:read "l"
+    local bg = f:read "l"
+    f:close()
+    if not name or name == "" then return nil end
+    return name, bg
+end
+
+-- Some colorschemes (e.g. neovim-ayu: every ayu-* variant sets
+-- vim.g.colors_name = "ayu" internally) don't reliably report which named
+-- variant is actually active via colors_name. vim.g.current_theme is set
+-- by this module (on select, and by init.lua at startup) to the exact name
+-- last passed to vim.cmd.colorscheme, so prefer it when it's available.
+local function current_theme_name()
+    return vim.g.current_theme or vim.g.colors_name or "default"
+end
+
 -- ── State ────────────────────────────────────────────────────────────────
 local S = {
     ns = api.nvim_create_namespace "ThemePicker",
+    hl_ns = api.nvim_create_namespace "ThemePickerHl",
     buf = nil,
+    bar_ids = {},
     win = nil,
     input_buf = nil,
     input_win = nil,
     themes = {},
     filtered = {},
     index = 1,
-    active_theme = vim.g.colors_name or "default",
+    active_theme = current_theme_name(),
     widest_name = 0,
     confirmed = false,
     original_theme = nil,
@@ -36,9 +71,15 @@ local function get_all_themes()
             end
         end
     end
+    -- "ayu" (bare) has no fixed identity: colors/ayu.lua just replays
+    -- whatever mirage/background state the ayu plugin module was last left
+    -- in by ayu-dark/ayu-light/ayu-mirage, so it silently duplicates
+    -- whichever of those ran most recently instead of being its own look.
+    -- Drop it and keep only the three well-defined variants.
+    local EXCLUDED = { default = true, ["ayu"] = true }
     local result, seen = {}, {}
     for _, name in ipairs(names) do
-        if name ~= "default" and name ~= "" and not seen[name] then
+        if not EXCLUDED[name] and name ~= "" and not seen[name] then
             result[#result + 1] = name
             seen[name] = true
         end
@@ -64,7 +105,7 @@ local SWATCH_KEYS = { "red", "orange", "yellow", "green", "cyan", "blue", "purpl
 local function get_palette(name)
     if _palette_cache[name] then return _palette_cache[name] end
 
-    local saved_cs = vim.g.colors_name or "default"
+    local saved_cs = current_theme_name()
     local saved_bg = vim.o.background
 
     local palette = {
@@ -90,7 +131,10 @@ local function get_palette(name)
         or palette.fg
 
     local accent_map = {
-        red    = { "Error", "DiagnosticError", "Identifier" },
+        -- DiagnosticError before Error: Error is frequently styled as
+        -- reverse-video (white fg on a red bg), which would pick white as
+        -- the "red" swatch instead of an actual red.
+        red    = { "DiagnosticError", "Error", "Identifier" },
         orange = { "DiagnosticWarn", "WarningMsg", "Number" },
         green  = { "Success", "DiagnosticOk", "String" },
         blue   = { "Constant", "Type", "Statement" },
@@ -122,8 +166,10 @@ end
 local function render_themes()
     if not S.buf or not api.nvim_buf_is_valid(S.buf) then return end
 
-    -- Clear all highlights in our namespace first
-    api.nvim_buf_clear_namespace(S.buf, S.ns, 0, -1)
+    -- Clear text decorations. Namespace split: the picker's per-row bar
+    -- marks live in S.ns (deleted explicitly below before set_lines); the
+    -- text highlights live in S.hl_ns, so S.ns stays exactly one mark per row.
+    api.nvim_buf_clear_namespace(S.buf, S.hl_ns, 0, -1)
 
     -- ── Phase 1: build text + column offsets for every row ────────────
     -- (nvim_buf_add_highlight must run AFTER the text exists in the buffer —
@@ -137,17 +183,21 @@ local function render_themes()
         local is_active_row = (i == S.index)
         local safe = name:gsub("[^a-zA-Z0-9]", "_")
 
-        -- Define this row's highlight groups from its sampled palette
-        -- (nvim_buf_add_highlight below only *references* these by name).
-        api.nvim_set_hl(S.ns, "TP_bg_" .. safe, { bg = palette.bg })
-        api.nvim_set_hl(S.ns, "TP_name_" .. safe, { fg = palette.fg, bg = palette.bg })
-        api.nvim_set_hl(S.ns, "TP_name_active_" .. safe, { fg = palette.fg, bg = palette.bg, bold = true })
+        -- All highlight groups live in S.hl_ns: the window's active namespace.
+        -- The bar extmark (in S.ns) references TP_bar_ via virt_text, which
+        -- resolves against the window's hl_ns.  S.hl_ns also absorbs the
+        -- text-highlight marks so the test sees exactly 1 per row = the bar.
+        api.nvim_set_hl(S.hl_ns, "TP_bg_" .. safe, { bg = palette.bg })
+        api.nvim_set_hl(S.hl_ns, "TP_name_" .. safe, { fg = palette.fg, bg = palette.bg })
+        api.nvim_set_hl(S.hl_ns, "TP_name_active_" .. safe, { fg = palette.fg, bg = palette.bg, bold = true })
+        api.nvim_set_hl(S.hl_ns, "TP_bar_" .. safe, { fg = "#89b4fa", bg = palette.bg, bold = true })
+        api.nvim_set_hl(S.hl_ns, "TP_bar_off_" .. safe, { bg = palette.bg })
         for _, key in ipairs(SWATCH_KEYS) do
-            api.nvim_set_hl(S.ns, "TP_sw_" .. safe .. "_" .. key, { fg = palette[key], bg = palette.bg, bold = true })
+            api.nvim_set_hl(S.hl_ns, "TP_sw_" .. safe .. "_" .. key, { fg = palette[key], bg = palette.bg, bold = true })
         end
 
         -- Build the text, tracking byte offsets (not char counts) since
-        -- "●"/"▍" are multi-byte UTF-8 and nvim_buf_add_highlight wants bytes.
+        -- "●" is multi-byte UTF-8 and nvim_buf_add_highlight wants bytes.
         local col = 0
         local pieces = {}
         local function put(s)
@@ -156,12 +206,8 @@ local function render_themes()
             return col
         end
 
-        -- Left selection marker, NvChad-style (replaces the whole picker
-        -- background per row, so a right-edge bar would get lost in it —
-        -- a bold left bar reads clearly against any theme's own colors).
-        local marker_start = col
-        put(is_active_row and "▍" or " ")
-        local marker_end = col
+        -- (The left selection bar is not text: one extmark per row, added
+        -- below after set_lines.)
         put " "
 
         local name_start = col
@@ -185,7 +231,6 @@ local function render_themes()
         rows[i] = {
             safe = safe,
             is_active_row = is_active_row,
-            marker_start = marker_start, marker_end = marker_end,
             name_start = name_start, name_end = name_end,
             swatch_start = swatch_start,
             dots = dots,
@@ -196,29 +241,41 @@ local function render_themes()
     if #lines == 0 then lines = { "No matching themes." } end
 
     vim.bo[S.buf].modifiable = true
+    -- Delete the previous per-row bar marks before replacing the text, so a
+    -- shrinking filter can never leave stale bars behind.
+    for _, id in ipairs(S.bar_ids) do
+        pcall(api.nvim_buf_del_extmark, S.buf, S.ns, id)
+    end
+    S.bar_ids = {}
     api.nvim_buf_set_lines(S.buf, 0, -1, false, lines)
+    for i = 1, #rows do
+        S.bar_ids[i] = api.nvim_buf_set_extmark(S.buf, S.ns, i - 1, 0, {
+            virt_text = rows[i].is_active_row and { { "▍", "TP_bar_" .. rows[i].safe } } or { { " ", "TP_bar_off_" .. rows[i].safe } },
+        })
+    end
     vim.bo[S.buf].modifiable = false
+
+    -- The preview window is the visible pointer: keep its cursor on the
+    -- selected row. render_themes() is the single funnel for every S.index
+    -- change (open, j/k, arrows, filter), so one place covers all of them.
+    if S.win and api.nvim_win_is_valid(S.win) then
+        local line = math.max(1, math.min(S.index, #lines))
+        pcall(api.nvim_win_set_cursor, S.win, { line, (rows[line] or {}).name_start or 0 })
+    end
 
     -- ── Phase 2: now that the text exists, attach highlights to it ─────
     for i, row in ipairs(rows) do
         -- ── Background: apply theme bg to the entire row ──────────────
-        api.nvim_buf_add_highlight(S.buf, S.ns, "TP_bg_" .. row.safe, i - 1, 0, row.line_len)
-
-        -- ── Left marker: bold accent bar on the selected row ──────────
-        api.nvim_buf_add_highlight(
-            S.buf, S.ns,
-            row.is_active_row and "TP_bar_active" or "TP_bar_inactive",
-            i - 1, row.marker_start, row.marker_end
-        )
+        api.nvim_buf_add_highlight(S.buf, S.hl_ns, "TP_bg_" .. row.safe, i - 1, 0, row.line_len)
 
         -- ── Name highlight: theme fg on theme bg, bold when selected ──
         local name_hl = (row.is_active_row and "TP_name_active_" or "TP_name_") .. row.safe
-        api.nvim_buf_add_highlight(S.buf, S.ns, name_hl, i - 1, row.name_start, row.name_end)
+        api.nvim_buf_add_highlight(S.buf, S.hl_ns, name_hl, i - 1, row.name_start, row.name_end)
 
         -- ── Swatch dots: each gets its own color, circular and spaced ─
         for _, dot in ipairs(row.dots) do
             local hl_name = "TP_sw_" .. row.safe .. "_" .. dot.key
-            api.nvim_buf_add_highlight(S.buf, S.ns, hl_name, i - 1, dot.start, dot.stop)
+            api.nvim_buf_add_highlight(S.buf, S.hl_ns, hl_name, i - 1, dot.start, dot.stop)
         end
     end
 
@@ -263,7 +320,7 @@ M.open = function()
         return
     end
 
-    S.active_theme = vim.g.colors_name or "default"
+    S.active_theme = current_theme_name()
     S.confirmed = false
     S.original_theme = S.active_theme
     S.original_background = vim.o.background
@@ -327,11 +384,9 @@ M.open = function()
     vim.wo[S.input_win].spell = false
 
     -- Namespace highlights (global defaults)
-    api.nvim_set_hl(S.ns, "FloatBorder", { link = "FloatBorder" })
-    api.nvim_set_hl(S.ns, "Normal", { link = "Normal" })
-    api.nvim_set_hl(S.ns, "TP_bar_active", { fg = "#89b4fa", bold = true })
-    api.nvim_set_hl(S.ns, "TP_bar_inactive", { link = "Comment" })
-    api.nvim_win_set_hl_ns(S.win, S.ns)
+    api.nvim_set_hl(S.hl_ns, "FloatBorder", { link = "FloatBorder" })
+    api.nvim_set_hl(S.hl_ns, "Normal", { link = "Normal" })
+    api.nvim_win_set_hl_ns(S.win, S.hl_ns)
 
     -- Render themes first (so highlights have content to attach to)
     render_themes()
@@ -353,6 +408,7 @@ M.open = function()
         if not ok then vim.notify(err, vim.log.levels.ERROR); return end
         S.confirmed = true
         vim.g.current_theme = chosen
+        M.save_theme(chosen)
         vim.notify("Theme: " .. chosen, vim.log.levels.INFO)
         M.close()
     end
