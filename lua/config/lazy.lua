@@ -1,21 +1,18 @@
-require("lazy").setup({
-    spec = {{
-        import = "plugins.ui"
-    }, {
-        import = "plugins.editor"
-    }, {
-        import = "plugins.navigation"
-    }, {
-        -- Import the explicit spec list without scanning its helper modules.
-        name = "plugins.lsp",
+-- Load category manifests explicitly; never scan their helper modules.
+local categories = { "ui", "editor", "navigation", "lsp", "git", "notebooks" }
+local specs = {}
+for _, category in ipairs(categories) do
+    local module = "plugins." .. category
+    specs[#specs + 1] = {
+        name = module,
         import = function()
-            return require "plugins.lsp"
-        end
-    }, {
-        import = "plugins.git"
-    }, {
-        import = "plugins.notebooks"
-    }},
+            return require(module)
+        end,
+    }
+end
+
+require("lazy").setup({
+    spec = specs,
     defaults = {
         lazy = true,
         version = false

@@ -11,14 +11,133 @@ local function evaluate_current_cell()
     end)
 end
 
-local function evaluate_all_cells()
-    require("config.molten_kernel").with_kernel(function(kernel)
-        local line_count = vim.api.nvim_buf_line_count(0)
-        local ok, err = pcall(vim.fn.MoltenEvaluateRange, kernel, 1, line_count)
+-- Molten exposes no "execution finished" event, so batch runs (Run All /
+-- Restart & Run All) are tracked by polling its own "molten-extmarks"
+-- namespace for the "... Running" virt_text it writes per busy cell (see
+-- outputbuffer.py). Finishing requires that marker to be *absent* for a
+-- short debounce window, not just momentarily gone, since Molten briefly
+-- shows no "Running" cell while stepping from one queued cell to the next.
+local function watch_execution(bufnr, handle)
+    local ns = vim.api.nvim_get_namespaces()["molten-extmarks"]
+    if not ns then
+        handle:finish()
+        return
+    end
+
+    local function any_running()
+        local ok, marks = pcall(vim.api.nvim_buf_get_extmarks, bufnr, ns, 0, -1, { details = true })
         if not ok then
-            vim.notify("Molten range evaluation failed: " .. tostring(err), vim.log.levels.ERROR)
+            return false
+        end
+        for _, mark in ipairs(marks) do
+            local details = mark[4] or {}
+            local segments = {}
+            vim.list_extend(segments, details.virt_text or {})
+            for _, line in ipairs(details.virt_lines or {}) do
+                vim.list_extend(segments, line)
+            end
+            for _, seg in ipairs(segments) do
+                if type(seg[1]) == "string" and seg[1]:find("Running", 1, true) then
+                    return true
+                end
+            end
+        end
+        return false
+    end
+
+    local seen_running = false
+    local quiet_since = nil
+    local start = vim.uv.now()
+    local timer = vim.uv.new_timer()
+
+    timer:start(
+        200,
+        200,
+        vim.schedule_wrap(function()
+            local running = any_running()
+            if running then
+                seen_running = true
+                quiet_since = nil
+            elseif seen_running then
+                quiet_since = quiet_since or vim.uv.now()
+            end
+
+            local elapsed = vim.uv.now() - start
+            local quiet_long_enough = quiet_since and (vim.uv.now() - quiet_since) > 500
+            local timed_out = elapsed > 10 * 60 * 1000 -- 10 min safety cap
+
+            if quiet_long_enough or timed_out then
+                timer:stop()
+                timer:close()
+                handle:finish()
+            end
+        end)
+    )
+end
+
+local function with_progress(title, message, run)
+    local ok, progress = pcall(require, "fidget.progress")
+    local handle = ok
+        and progress.handle.create({
+            title = title,
+            message = message,
+            lsp_client = { name = "molten" },
+        })
+
+    local bufnr = vim.api.nvim_get_current_buf()
+    run(function()
+        if handle then
+            watch_execution(bufnr, handle)
         end
     end)
+end
+
+local function evaluate_all_cells()
+    require("config.molten_kernel").with_kernel(function(kernel)
+        with_progress("Running notebook", "Evaluating all cells…", function(started)
+            local line_count = vim.api.nvim_buf_line_count(0)
+            local ok, err = pcall(vim.fn.MoltenEvaluateRange, kernel, 1, line_count)
+            if not ok then
+                vim.notify("Molten range evaluation failed: " .. tostring(err), vim.log.levels.ERROR)
+                return
+            end
+            started()
+        end)
+    end)
+end
+
+local function restart_and_run_all()
+    local kernels = require("config.molten_kernel").buffer_kernels()
+    if #kernels == 0 then
+        vim.notify("No running kernel to restart. Use :MoltenInit first.", vim.log.levels.WARN)
+        return
+    end
+
+    local done = false
+    local function run_once()
+        if done then
+            return
+        end
+        done = true
+        evaluate_all_cells()
+    end
+
+    local group = vim.api.nvim_create_augroup("MoltenRestartRunAll", { clear = true })
+    vim.api.nvim_create_autocmd("User", {
+        group = group,
+        pattern = "MoltenKernelReady",
+        once = true,
+        callback = run_once,
+    })
+    vim.defer_fn(function()
+        if not done then
+            pcall(vim.api.nvim_del_augroup_by_id, group)
+            run_once()
+        end
+    end, 15000)
+
+    vim.notify("Restarting kernel…", vim.log.levels.INFO)
+    vim.cmd "MoltenRestart!"
 end
 
 local function evaluate_visual()
@@ -164,6 +283,11 @@ return { -- 1) Molten
                 "<leader>mR",
                 "<cmd>MoltenRestart!<CR>",
                 desc = "Restart kernel (clear outputs)",
+            },
+            {
+                "<leader>mA",
+                restart_and_run_all,
+                desc = "Restart kernel & run all cells",
             },
             {
                 "<leader>mI",

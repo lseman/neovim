@@ -1,4 +1,5 @@
 return {
+    { import = "plugins.editor.flash" },
     { import = "plugins.editor.claudecode" },
     { import = "plugins.editor.grug-far" },
     { import = "plugins.editor.kulala" },

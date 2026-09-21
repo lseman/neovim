@@ -14,7 +14,6 @@ local luasnip_spec = {
     config = function(_, opts)
         local ls = require "luasnip"
         ls.setup(opts)
-        require("luasnip.loaders.from_vscode").lazy_load()
         pcall(require, "config.luasnip")
 
         vim.keymap.set({ "i", "s" }, "<C-k>", function()

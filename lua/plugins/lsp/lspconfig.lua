@@ -82,9 +82,8 @@ return {
             })
 
             vim.lsp.config("clangd", {
-                capabilities = vim.tbl_deep_extend("force", capabilities, {
-                    offsetEncoding = { "utf-16" },
-                }),
+                -- 0.12 reads top-level offset_encoding; capabilities.offsetEncoding is ignored
+                offset_encoding = "utf-16",
                 cmd = {
                     "clangd",
                     "--background-index",
@@ -113,29 +112,40 @@ return {
                 root_markers = { { "vhdl_ls.toml", "Makefile", "src", "rtl", "lib" }, ".git" },
             })
 
+            -- Attach Copilot only where real code LSP servers attach: its value is
+            -- inline completion, so prose buffers gain nothing from the server.
+            -- Keep this list in sync with vim.lsp.enable below.
+            local function server_filetypes(server)
+                -- Indexing vim.lsp.config fails under the test mock, which
+                -- replaces it with the setter function; skip gracefully there.
+                local ok, cfg = pcall(function()
+                    return vim.lsp.config[server]
+                end)
+                return ok and cfg and cfg.filetypes or nil
+            end
+            do
+                local code_fts = {}
+                for _, server in ipairs({ "basedpyright", "ruff", "clangd", "lua_ls", "biome", "vhdl_ls" }) do
+                    for _, ft in ipairs(server_filetypes(server) or {}) do
+                        code_fts[ft] = true
+                    end
+                end
+                if next(code_fts) then
+                    vim.lsp.config("copilot", { filetypes = vim.tbl_keys(code_fts) })
+                end
+            end
+
             vim.lsp.enable({ "basedpyright", "ruff", "clangd", "lua_ls", "biome", "vhdl_ls", "copilot" })
 
             -- Native LSP inline completion (0.12): copilot-language-server (via
             -- nvim-lspconfig's bundled `lsp/copilot.lua`) speaks
             -- textDocument/inlineCompletion, so no ghost-text plugin is needed.
-            local copilot_disabled_filetypes = {
-                yaml = true,
-                markdown = true,
-                help = true,
-                gitcommit = true,
-                gitrebase = true,
-                ["dap-repl"] = true,
-            }
             vim.api.nvim_create_autocmd("LspAttach", {
                 callback = function(args)
                     local client = vim.lsp.get_client_by_id(args.data.client_id)
-                    if not client or not client:supports_method "textDocument/inlineCompletion" then
-                        return
+                    if client and client:supports_method "textDocument/inlineCompletion" then
+                        vim.lsp.inline_completion.enable(true, { bufnr = args.buf })
                     end
-                    if copilot_disabled_filetypes[vim.bo[args.buf].filetype] then
-                        return
-                    end
-                    vim.lsp.inline_completion.enable(true, { bufnr = args.buf })
                 end,
             })
 

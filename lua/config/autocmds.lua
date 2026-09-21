@@ -168,7 +168,6 @@ autocmd("BufReadPre", {
         vim.opt_local.undofile = false
         vim.opt_local.foldmethod = "manual"
         vim.opt_local.syntax = "off"
-        vim.cmd "syntax off"
         vim.api.nvim_create_autocmd("BufReadPost", {
             buffer = args.buf,
             once = true,

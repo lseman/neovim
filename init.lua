@@ -7,40 +7,11 @@ end
 
 vim.g.mapleader = " "
 vim.g.maplocalleader = ","
--- Pin the Neovim Python host so remote plugins (e.g. molten-nvim) always
--- find pynvim, regardless of project venvs.
-do
-  local candidates = {
-    vim.fs.joinpath(vim.fn.stdpath "data", "python-host", "bin", "python"),
-    vim.fn.exepath "python3",
-    "/usr/bin/python3",
-    "/usr/local/bin/python3",
-  }
-  for _, p in ipairs(candidates) do
-    if p ~= "" and vim.fn.executable(p) == 1 and vim.system({ p, "-c", "import pynvim" }):wait().code == 0 then
-      vim.g.python3_host_prog = p
-      break
-    end
-  end
-end
 
-local lazypath = vim.fs.joinpath(vim.fn.stdpath "data", "lazy", "lazy.nvim")
-if not vim.uv.fs_stat(lazypath) then
-  local result = vim
-    .system({
-      "git",
-      "clone",
-      "--filter=blob:none",
-      "https://github.com/folke/lazy.nvim.git",
-      lazypath,
-    })
-    :wait()
-  if result.code ~= 0 then
-    vim.api.nvim_echo({ { "Failed to clone lazy.nvim:\n", "ErrorMsg" }, { result.stderr, "WarningMsg" } }, true, {})
+require "config.providers"
+if not require("config.bootstrap").setup() then
     return
-  end
 end
-vim.opt.rtp:prepend(lazypath)
 
 local function safe_require(name)
   local ok, err = pcall(require, name)

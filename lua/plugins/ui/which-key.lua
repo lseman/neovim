@@ -259,14 +259,6 @@ return {
                 desc = "Recent Files",
             },
             {
-                "<leader>fK",
-                desc = "Write Keymap Cheatsheet",
-            },
-            {
-                "<leader>fW",
-                desc = "Write Cheatsheet to Disk",
-            },
-            {
                 "<leader>fk",
                 desc = "Keymaps",
             },

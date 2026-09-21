@@ -17,4 +17,14 @@ Check the complete plugin spec tree using the installed Lazy parser:
 nvim --headless -u NONE -i NONE -l tests/lazy-specs.lua
 ```
 
-This does not install or initialize plugins. The LSP import in `config/lazy.lua` uses a named function to load the explicit list in `plugins/lsp.lua`. A string import would also scan `plugins/lsp/` and incorrectly treat the two helper modules as plugin specifications.
+This does not install or initialize plugins. Every category import in `config/lazy.lua` uses a named function to load its explicit manifest. This prevents directory scanning from treating helper modules as plugin specifications. The parser check also verifies representative plugins from all six categories, including Flash, which must be listed explicitly.
+
+Run all checks from the configuration root:
+
+```sh
+for test in tests/*.lua; do
+    nvim --headless -u NONE -i NONE -l "$test" || exit
+done
+```
+
+The dashboard check requires an installed `snacks.nvim`. The other checks cover the shortcut cheatsheet and theme picker using real Neovim buffers and windows.

@@ -9,38 +9,26 @@
 | Key | Description | Scope | Action |
 | --- | --- | --- | --- |
 | `  ` | Smart Find Files | global | `lua/callback` |
-| ` -` | Open yazi at the current file | global | `<Cmd>Yazi<CR>` |
 | ` .` | Toggle Scratch Buffer | global | `lua/callback` |
 | ` /` | Comment: toggle line | global | `gcc` |
 | ` :` | Command History | global | `lua/callback` |
 | ` S` | Select Scratch Buffer | global | `lua/callback` |
-| ` a?` | avante: select model | global | `<Plug>(AvanteSelectModel)` |
-| ` aB` | avante: add all open buffers | global | `<Plug>(AvanteAddAllBuffers)` |
-| ` aC` | avante: toggle selection | global | `<Plug>(AvanteToggleSelection)` |
-| ` aM` | avante: select ACP model | global | `<Plug>(AvanteSelectACPModel)` |
-| ` aR` | avante: display repo map | global | `<Plug>(AvanteShowRepoMap)` |
-| ` aS` | avante: stop | global | `<Plug>(AvanteStop)` |
-| ` aa` | avante: ask | global | `<Plug>(AvanteAsk)` |
-| ` ad` | avante: toggle debug | global | `<Plug>(AvanteToggleDebug)` |
-| ` af` | avante: focus | global | `<Plug>(AvanteFocus)` |
-| ` ah` | avante: select history | global | `<Plug>(AvanteSelectHistory)` |
-| ` am` | avante: select ACP mode | global | `<Plug>(AvanteSelectACPMode)` |
-| ` an` | avante: create new ask | global | `<Plug>(AvanteAskNew)` |
-| ` ar` | avante: refresh | global | `<Plug>(AvanteRefresh)` |
-| ` as` | avante: toggle suggestion | global | `<Plug>(AvanteToggleSuggestion)` |
-| ` at` | avante: toggle | global | `<Plug>(AvanteToggle)` |
-| ` az` | avante: toggle Zen Mode | global | `<Plug>(AvanteZenMode)` |
+| ` aC` | Claude: Continue | global | `<cmd>ClaudeCode --continue<cr>` |
+| ` aa` | Claude: Accept diff | global | `<cmd>ClaudeCodeDiffAccept<cr>` |
+| ` ab` | Claude: Add current buffer | global | `<cmd>ClaudeCodeAdd %<cr>` |
+| ` ac` | Claude: Toggle Claude | global | `<cmd>ClaudeCode<cr>` |
+| ` ad` | Claude: Deny diff | global | `<cmd>ClaudeCodeDiffDeny<cr>` |
+| ` af` | Claude: Focus Claude | global | `<cmd>ClaudeCodeFocus<cr>` |
+| ` am` | Claude: Select model | global | `<cmd>ClaudeCodeSelectModel<cr>` |
+| ` ar` | Claude: Resume | global | `<cmd>ClaudeCode --resume<cr>` |
 | ` bD` | Close other buffers | global | `lua/callback` |
 | ` bd` | Close buffer | global | `lua/callback` |
 | ` cR` | Rename File | global | `lua/callback` |
 | ` ca` | Code Action | global | `lua/callback` |
 | ` ch` | Config health | global | `<Cmd>ConfigHealth<CR>` |
-| ` cw` | Open the file manager in nvim's working directory | global | `<Cmd>Yazi cwd<CR>` |
 | ` e` | File Explorer | global | `lua/callback` |
 | ` fG` | Git Files | global | `lua/callback` |
-| ` fK` | Write Cheatsheet to Disk | global | `lua/callback` |
 | ` fS` | Workspace Symbols | global | `lua/callback` |
-| ` fW` | Write Cheatsheet to Disk | global | `lua/callback` |
 | ` fb` | Buffers | global | `lua/callback` |
 | ` fc` | Config Files | global | `lua/callback` |
 | ` fd` | Diagnostics | global | `lua/callback` |
@@ -57,7 +45,6 @@
 | ` gb` | Git Browse (line/repo) | global | `lua/callback` |
 | ` gd` | Git Diff (Hunks) | global | `lua/callback` |
 | ` gf` | Git Log File | global | `lua/callback` |
-| ` gg` | Neogit Status | global | `lua/callback` |
 | ` gk` | Git Branches | global | `lua/callback` |
 | ` gl` | Git Log | global | `lua/callback` |
 | ` gs` | Git Status | global | `lua/callback` |
@@ -155,7 +142,6 @@
 | ` z` | Zen Mode | global | `lua/callback` |
 | `&` | :help &-default | global | `:&&<CR>` |
 | `,` | Buffers | global | `lua/callback` |
-| `-` | Open parent directory | global | `<Plug>(nvim-dir-up)` |
 | `.` | Live grep | global | `lua/callback` |
 | `0` | Dashboard action | buffer | `lua/callback` |
 | `1` | Dashboard action | buffer | `lua/callback` |
@@ -179,7 +165,6 @@
 | `<C-9>` | Buffer 9 | global | `lua/callback` |
 | `<C-A>` | Select all | global | `<Esc>ggVG` |
 | `<C-B>` | Nabla popup | global | `lua/callback` |
-| `<C-Bslash>` | pi-agent: abort | global | `<Cmd>PiAgentAbort<CR>` |
 | `<C-Down>` | Resize down | global | `<Cmd>resize -2<CR>` |
 | `<C-E>` | Toggle Explorer | global | `lua/callback` |
 | `<C-F>` | Fuzzy find in current buffer | global | `lua/callback` |
@@ -188,7 +173,6 @@
 | `<C-K>` | Window up | global | `<C-W>k` |
 | `<C-L>` | Window right | global | `<C-W>l` |
 | `<C-Left>` | Resize left | global | `<Cmd>vertical resize -2<CR>` |
-| `<C-P>` | pi-agent: ask with context | global | `<Cmd>PiAgentAsk<CR>` |
 | `<C-Q>` | Quit (confirm if modified) | global | `lua/callback` |
 | `<C-Right>` | Resize right | global | `<Cmd>vertical resize +2<CR>` |
 | `<C-S-F>` | Find in files | global | `lua/callback` |
@@ -196,7 +180,6 @@
 | `<C-S-P>` | Harpoon: Previous | global | `lua/callback` |
 | `<C-S>` | Save file | global | `<Cmd>update<CR>` |
 | `<C-T>` | Toggle terminal | global | `lua/callback` |
-| `<C-Up>` | Resume the last yazi session | global | `<Cmd>Yazi toggle<CR>` |
 | `<C-W><C-D>` | Show diagnostics under the cursor | global | `<C-W>d` |
 | `<C-W>d` | Show diagnostics under the cursor | global | `lua/callback` |
 | `<CR>` | Dashboard action | buffer | `lua/callback` |
@@ -208,9 +191,6 @@
 | `<F7>` | Next cell (F7) | quarto/qmd | `lua/callback` |
 | `<F8>` | Previous cell (F8) | quarto/qmd | `lua/callback` |
 | `<F9>` | Show code actions | global | `lua/callback` |
-| `<Plug>(nvim-dir-open)` | Open directory entry | global | `lua/callback` |
-| `<Plug>(nvim-dir-reload)` | Reload directory | global | `lua/callback` |
-| `<Plug>(nvim-dir-up)` | Open parent directory | global | `lua/callback` |
 | `<Plug>luasnip-delete-check` | LuaSnip: Removes current snippet from jumplist | global | `lua/callback` |
 | `<Plug>luasnip-expand-repeat` | LuaSnip: Repeat last node expansion | global | `lua/callback` |
 | `<S-Tab>` | Previous buffer | global | `lua/callback` |
@@ -233,7 +213,6 @@
 | `[l` | Previous location | global | `lua/callback` |
 | `[q` | Previous quickfix | global | `lua/callback` |
 | `[t` | Previous todo comment | global | `lua/callback` |
-| `\` | Open yazi | global | `<Cmd>Yazi<CR>` |
 | `] ` | Add empty line below cursor | global | `lua/callback` |
 | `]<C-L>` | :lnfile | global | `lua/callback` |
 | `]<C-Q>` | :cnfile | global | `lua/callback` |
@@ -286,7 +265,6 @@
 | `<C-W>` | :help i_CTRL-W-default | global | `<C-G>u<C-W>` |
 | `<CR>` | autopairs completion confirm | global | `v:lua.require'nvim-autopairs'.completion_confirm()` |
 | `<Left>` | Smart left – jump to previous line if at start | global | `lua/callback` |
-| `<M-CR>` | [copilot] (panel) open | global | `lua/callback` |
 | `<Plug>luasnip-delete-check` | LuaSnip: Removes current snippet from jumplist | global | `lua/callback` |
 | `<Plug>luasnip-expand-or-jump` | LuaSnip: Expand or jump in the current snippet | global | `lua/callback` |
 | `<Plug>luasnip-expand-repeat` | LuaSnip: Repeat last node expansion | global | `lua/callback` |
@@ -303,12 +281,8 @@
 
 | Key | Description | Scope | Action |
 | --- | --- | --- | --- |
-| ` -` | Open yazi at the current file | global | `<Cmd>Yazi<CR>` |
 | ` /` | Comment: toggle selection | global | `gc` |
-| ` aa` | avante: ask | global | `<Plug>(AvanteAsk)` |
-| ` ae` | avante: edit | global | `<Plug>(AvanteEdit)` |
-| ` an` | avante: create new ask | global | `<Plug>(AvanteAskNew)` |
-| ` az` | avante: toggle Zen Mode | global | `<Plug>(AvanteZenMode)` |
+| ` as` | Claude: Send to Claude | global | `<cmd>ClaudeCodeSend<cr>` |
 | ` ca` | Code Action | global | `lua/callback` |
 | ` mc` | Evaluate visual selection | global | `lua/callback` |
 | ` qv` | Quarto: Run selection | global | `lua/callback` |
@@ -349,12 +323,7 @@
 
 | Key | Description | Scope | Action |
 | --- | --- | --- | --- |
-| ` -` | Open yazi at the current file | global | `<Cmd>Yazi<CR>` |
 | ` /` | Comment: toggle selection | global | `gc` |
-| ` aa` | avante: ask | global | `<Plug>(AvanteAsk)` |
-| ` ae` | avante: edit | global | `<Plug>(AvanteEdit)` |
-| ` an` | avante: create new ask | global | `<Plug>(AvanteAskNew)` |
-| ` az` | avante: toggle Zen Mode | global | `<Plug>(AvanteZenMode)` |
 | ` ca` | Code Action | global | `lua/callback` |
 | ` mc` | Evaluate visual selection | global | `lua/callback` |
 | ` qv` | Quarto: Run selection | global | `lua/callback` |
@@ -363,7 +332,6 @@
 | `#` | :help v_#-default | global | `lua/callback` |
 | `*` | :help v_star-default | global | `lua/callback` |
 | `<C-A>` | Select all | global | `<Esc>ggVG` |
-| `<C-P>` | pi-agent: ask about selection | global | `<Cmd>PiAgentAskSelection<CR>` |
 | `<C-Q>` | Quit (confirm if modified) | global | `lua/callback` |
 | `<C-S-F>` | Find in files | global | `lua/callback` |
 | `<C-S>` | Save file | global | `<Cmd>update<CR>` |

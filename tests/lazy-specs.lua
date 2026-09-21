@@ -21,7 +21,9 @@ for _, notification in ipairs(spec.notifs) do
     end
 end
 assert(#errors == 0, table.concat(errors, "\n"))
-assert(spec.plugins["nvim-lspconfig"], "LSP plugin was not registered")
+for _, name in ipairs({ "nvim-lspconfig", "flash.nvim", "snacks.nvim", "oil.nvim", "gitsigns.nvim", "quarto-nvim" }) do
+    assert(spec.plugins[name], name .. " was not registered by its category manifest")
+end
 assert(type(require "plugins.lsp.interactive-rename") == "function")
 assert(type(require("plugins.lsp.signature").setup) == "function")
 print("PASS: complete Lazy spec tree parses; both LSP helpers remain loadable")

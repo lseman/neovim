@@ -26,6 +26,68 @@ local function with_molten_kernel(run)
     end)
 end
 
+-- Executable cells only: ```{lang} ... ``` (curly braces), matching the same
+-- convention quarto.nvim's own otter tsquery uses. Plain ```lang fences
+-- inside markdown cells are illustrative, not runnable, so they don't belong
+-- in a "jump to cell" list.
+local function list_cells()
+    local bufnr = vim.api.nvim_get_current_buf()
+    local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+    local cells = {}
+    local i = 1
+    while i <= #lines do
+        local lang = lines[i]:match "^```%s*{%s*%.?([%w_+-]+)"
+        if lang then
+            local preview = ""
+            local j = i + 1
+            while j <= #lines and lines[j] ~= "```" do
+                if preview == "" and lines[j]:match "%S" then
+                    preview = vim.trim(lines[j])
+                end
+                j = j + 1
+            end
+            cells[#cells + 1] = { buf = bufnr, lnum = i, lang = lang, preview = preview }
+            i = j
+        end
+        i = i + 1
+    end
+    return cells
+end
+
+local function cell_picker()
+    local cells = list_cells()
+    if #cells == 0 then
+        vim.notify("No executable cells found in this buffer.", vim.log.levels.INFO)
+        return
+    end
+
+    local items = {}
+    for idx, cell in ipairs(cells) do
+        items[#items + 1] = {
+            idx = idx,
+            buf = cell.buf,
+            text = string.format("%d %s %s", cell.lnum, cell.lang, cell.preview),
+            pos = { cell.lnum, 0 },
+            cell_lang = cell.lang,
+            cell_preview = cell.preview,
+        }
+    end
+
+    Snacks.picker.pick {
+        title = "Notebook Cells",
+        items = items,
+        format = function(item)
+            return {
+                { string.format("[%s] ", item.cell_lang), "SnacksPickerLabel" },
+                { string.format("Ln %d  ", item.pos[1]), "LineNr" },
+                { item.cell_preview, "Normal" },
+            }
+        end,
+        layout = { preset = "ivy", preview = "main" },
+        main = { current = true },
+    }
+end
+
 return {
     "quarto-dev/quarto-nvim",
     ft = { "quarto", "qmd" },
@@ -233,6 +295,11 @@ return {
                 goto_quarto_block(nil, true)
             end,
             desc = "Quarto: Previous code block",
+        },
+        {
+            "<leader>qc",
+            cell_picker,
+            desc = "Quarto: Cell picker",
         },
         {
             "<F7>",

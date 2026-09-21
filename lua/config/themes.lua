@@ -59,7 +59,7 @@ local function get_hl_color(which, group)
 end
 
 local _palette_cache = {}
-local SWATCH_KEYS = { "red", "green", "blue", "yellow", "cyan", "purple" }
+local SWATCH_KEYS = { "red", "orange", "yellow", "green", "cyan", "blue", "purple" }
 
 local function get_palette(name)
     if _palette_cache[name] then return _palette_cache[name] end
@@ -69,7 +69,7 @@ local function get_palette(name)
 
     local palette = {
         bg = "#1e1e2e", fg = "#cdd6f4",
-        red = "#f38ba8", green = "#a6e3a1", blue = "#89b4fa",
+        red = "#f38ba8", orange = "#fab387", green = "#a6e3a1", blue = "#89b4fa",
         yellow = "#f9e2af", cyan = "#94e2d5", purple = "#cba6f7",
     }
 
@@ -91,6 +91,7 @@ local function get_palette(name)
 
     local accent_map = {
         red    = { "Error", "DiagnosticError", "Identifier" },
+        orange = { "DiagnosticWarn", "WarningMsg", "Number" },
         green  = { "Success", "DiagnosticOk", "String" },
         blue   = { "Constant", "Type", "Statement" },
         yellow = { "Number", "Conditional", "Function" },
@@ -140,12 +141,13 @@ local function render_themes()
         -- (nvim_buf_add_highlight below only *references* these by name).
         api.nvim_set_hl(S.ns, "TP_bg_" .. safe, { bg = palette.bg })
         api.nvim_set_hl(S.ns, "TP_name_" .. safe, { fg = palette.fg, bg = palette.bg })
+        api.nvim_set_hl(S.ns, "TP_name_active_" .. safe, { fg = palette.fg, bg = palette.bg, bold = true })
         for _, key in ipairs(SWATCH_KEYS) do
-            api.nvim_set_hl(S.ns, "TP_sw_" .. safe .. "_" .. key, { fg = palette[key], bg = palette.bg })
+            api.nvim_set_hl(S.ns, "TP_sw_" .. safe .. "_" .. key, { fg = palette[key], bg = palette.bg, bold = true })
         end
 
         -- Build the text, tracking byte offsets (not char counts) since
-        -- "█"/"┃"/"│" are multi-byte UTF-8 and nvim_buf_add_highlight wants bytes.
+        -- "●"/"▍" are multi-byte UTF-8 and nvim_buf_add_highlight wants bytes.
         local col = 0
         local pieces = {}
         local function put(s)
@@ -154,27 +156,39 @@ local function render_themes()
             return col
         end
 
-        put "  "
+        -- Left selection marker, NvChad-style (replaces the whole picker
+        -- background per row, so a right-edge bar would get lost in it —
+        -- a bold left bar reads clearly against any theme's own colors).
+        local marker_start = col
+        put(is_active_row and "▍" or " ")
+        local marker_end = col
+        put " "
+
         local name_start = col
         put(name)
         local name_end = col
-        put(string.rep(" ", S.widest_name - #name) .. " ")
+        put(string.rep(" ", S.widest_name - #name) .. "   ")
 
+        -- Palette dots: round, spaced, NvChad-style swatches instead of a
+        -- glued flat stripe of block characters.
         local swatch_start = col
-        for _ in ipairs(SWATCH_KEYS) do put "█" end
-
-        put " "
-        local bar_start = col
-        put(is_active_row and "┃" or "│")
-        local bar_end = col
+        local dots = {}
+        for idx, key in ipairs(SWATCH_KEYS) do
+            if idx > 1 then put " " end
+            local dot_start = col
+            put "●"
+            dots[idx] = { key = key, start = dot_start, stop = col }
+        end
+        put "  "
 
         lines[i] = table.concat(pieces, "")
         rows[i] = {
             safe = safe,
             is_active_row = is_active_row,
+            marker_start = marker_start, marker_end = marker_end,
             name_start = name_start, name_end = name_end,
             swatch_start = swatch_start,
-            bar_start = bar_start, bar_end = bar_end,
+            dots = dots,
             line_len = #lines[i],
         }
     end
@@ -190,23 +204,29 @@ local function render_themes()
         -- ── Background: apply theme bg to the entire row ──────────────
         api.nvim_buf_add_highlight(S.buf, S.ns, "TP_bg_" .. row.safe, i - 1, 0, row.line_len)
 
-        -- ── Name highlight: theme fg on theme bg ─────────────────────
-        api.nvim_buf_add_highlight(S.buf, S.ns, "TP_name_" .. row.safe, i - 1, row.name_start, row.name_end)
-
-        -- ── Swatch highlights: each swatch gets its color ────────────
-        local scol = row.swatch_start
-        for _, key in ipairs(SWATCH_KEYS) do
-            local hl_name = "TP_sw_" .. row.safe .. "_" .. key
-            api.nvim_buf_add_highlight(S.buf, S.ns, hl_name, i - 1, scol, scol + 3)
-            scol = scol + 3
-        end
-
-        -- ── Active-row indicator: accent bar, NvChad-style ────────────
+        -- ── Left marker: bold accent bar on the selected row ──────────
         api.nvim_buf_add_highlight(
             S.buf, S.ns,
             row.is_active_row and "TP_bar_active" or "TP_bar_inactive",
-            i - 1, row.bar_start, row.bar_end
+            i - 1, row.marker_start, row.marker_end
         )
+
+        -- ── Name highlight: theme fg on theme bg, bold when selected ──
+        local name_hl = (row.is_active_row and "TP_name_active_" or "TP_name_") .. row.safe
+        api.nvim_buf_add_highlight(S.buf, S.ns, name_hl, i - 1, row.name_start, row.name_end)
+
+        -- ── Swatch dots: each gets its own color, circular and spaced ─
+        for _, dot in ipairs(row.dots) do
+            local hl_name = "TP_sw_" .. row.safe .. "_" .. dot.key
+            api.nvim_buf_add_highlight(S.buf, S.ns, hl_name, i - 1, dot.start, dot.stop)
+        end
+    end
+
+    if S.win and api.nvim_win_is_valid(S.win) then
+        pcall(api.nvim_win_set_config, S.win, {
+            footer = string.format(" %d/%d ", math.min(S.index, #S.filtered), #S.filtered),
+            footer_pos = "right",
+        })
     end
 end
 
@@ -219,8 +239,9 @@ local function calc_layout()
     local max_visible = math.min(#S.filtered, lines - 6)
     max_visible = math.max(max_visible, 3)
 
-    -- Width: widest name + arrow + padding + swatches + margins
-    local w = S.widest_name + 2 + #SWATCH_KEYS + 8
+    -- Width: marker + name + gap + spaced dots + margins
+    -- (see render_themes: 2 + name + 3 + (2*#dots - 1) + 2, plus a little breathing room)
+    local w = S.widest_name + 2 * #SWATCH_KEYS + 9
     local h = max_visible + 2
 
     local row = math.floor((lines - h) / 2)
@@ -276,9 +297,9 @@ M.open = function()
         width = layout.width,
         height = 1,
         style = "minimal",
-        border = "single",
-        title = " Search themes ",
-        title_pos = "left",
+        border = "rounded",
+        title = " 🎨 Theme Picker ",
+        title_pos = "center",
     })
 
     vim.bo[S.input_buf].buftype = "nofile"
@@ -294,7 +315,9 @@ M.open = function()
         width = layout.width,
         height = layout.height - 2,
         style = "minimal",
-        border = "single",
+        border = "rounded",
+        footer = "",
+        footer_pos = "right",
     })
 
     vim.bo[S.buf].buftype = "nofile"

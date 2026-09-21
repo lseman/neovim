@@ -30,17 +30,33 @@ return {
             silent = true,
         }
 
-        -- Activate on every matching filetype (including the buffer that triggered the load)
+        -- Activate on every matching filetype (including the buffer that triggered the load).
+        -- Quarto/qmd get quarto.nvim's own activation instead of a bare
+        -- otter.activate(): it passes a tsquery that only matches curly-brace
+        -- ```{lang} executable chunks (see quarto/init.lua, M.activate).
+        -- otter's own default falls back to the generic markdown injections
+        -- query, which also treats plain illustrative ```lang fences (e.g. a
+        -- ```bash install snippet inside a markdown cell) as live LSP regions
+        -- - spurious diagnostics/completions on non-executable text.
         vim.api.nvim_create_autocmd("FileType", {
             pattern = { "markdown", "quarto", "rmd", "qmd" },
             group = vim.api.nvim_create_augroup("OtterAutoActivate", {
                 clear = true,
             }),
-            callback = function()
+            callback = function(args)
+                local ft = vim.bo[args.buf].filetype
                 vim.defer_fn(function()
-                    if vim.api.nvim_buf_is_valid(0) then
-                        otter.activate(opts.languages, true, true)
+                    if not vim.api.nvim_buf_is_valid(args.buf) then
+                        return
                     end
+                    if ft == "quarto" or ft == "qmd" then
+                        local ok, quarto = pcall(require, "quarto")
+                        if ok then
+                            quarto.activate()
+                            return
+                        end
+                    end
+                    otter.activate(opts.languages, true, true)
                 end, 80) -- small delay so treesitter injections settle first
             end,
         })

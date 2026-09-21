@@ -1,244 +1,65 @@
-# Neovim Configuration
+# Neovim configuration
 
-A modern, state-of-the-art Neovim configuration built for productivity, featuring AI assistance, fast file search, and a polished UI.
+Personal Neovim setup for code, Markdown, and Quarto/Jupyter notebooks. Space is the leader; comma is the local leader. The default colorscheme is `ayu-mirage`.
 
-## 🚀 Features
+## Requirements
 
-- **AI-Powered Development**: Cursor-like AI experience with `CopilotChat.nvim`
-- **Blazing Fast File Search**: `fff.nvim` - the fastest and most accurate file search SDK
-- **Modern Completion**: `blink.cmp` with `LuaSnip` and `nvim-autopairs`
-- **Polished UI**: `snacks.nvim` dashboard, picker, explorer, and more
-- **Intelligent Folding**: Native Treesitter + LSP folding (textDocument/foldingRange)
-- **LSP & Formatting**: `conform.nvim` for formatting
-- **Git Integration**: `gitsigns.nvim`, `neogit`, and `fugitive`
-- **Notebook Support**: `molten.nvim`, `jupytext`, `quarto`, and `otter.nvim`
-- **HTTP Client**: `kulala.nvim` for API testing
-- **Markdown Preview**: `render-markdown.nvim` and `markdown-preview.nvim`
+- Neovim 0.12+ (the completion setup uses native LSP inline completion).
+- Git for plugin installation; a Nerd Font for icons.
+- Language servers and formatters for the languages you use. See `lua/plugins/lsp/lspconfig.lua` and `conform.lua` for the configured tools.
+- Notebook workflows additionally need Python with `pynvim`, Jupyter kernels, and Jupytext; rendering Quarto documents needs the Quarto CLI.
 
-## 📦 Plugin List
+Start `nvim` to bootstrap lazy.nvim and install missing plugins. The committed `lazy-lock.json` records plugin revisions. Use `:Lazy` to inspect plugins and `:checkhealth` to diagnose missing dependencies.
 
-### Core & Plugin Manager
-- `folke/lazy.nvim` - Modern plugin manager for Neovim
+## Where things belong
 
-### UI & Dashboard
-- `folke/snacks.nvim` - QoL plugins (dashboard, picker, explorer, terminal, scratch, notifier)
-- `folke/which-key.nvim` - Key binding helper
-- `folke/tokyonight.nvim` / `catppuccin/nvim` / `sainnhe/everforest` / `EdenEast/nightfox.nvim` - Color schemes
-- `nvim-lualine/lualine.nvim` - Statusline
-- `nvim-tree/nvim-web-devicons.lua` - File icons
-- `folke/trouble.nvim` - Diagnostics, quickfix, and loclist viewer
-- `folke/todo-comments.nvim` - TODO/FIXME/HACK/NOTE highlighting and navigation
-
-- `stevearc/bqf.nvim` - Better quickfix window
-- `j-hui/fidget.nvim` - LSP progress notifications
-- `nacro90/numb.nvim` - Show number on statusline on motion
-
-### Editor & Productivity
-- `CopilotC-Nvim/CopilotChat.nvim` - GitHub Copilot chat integration
-- `dmtrKovalenko/fff.nvim` - Freakin fast fuzzy file finder
-- `folke/flash.nvim` - Navigate with search labels and enhanced character motions
-- `saghen/blink.cmp` - Performant, batteries-included completion plugin
-- `L3MON4D3/LuaSnip` - Snippet engine
-- `windwp/nvim-autopairs` - Autopairs for Neovim
-- `echasnovski/mini.nvim` - Library of independent Lua modules
-- `echasnovski/mini.map` - Mini map integration
-- `mfussenegger/nvim-dap` - Debug Adapter Protocol client
-
-- `stevearc/grug-far.nvim` - Global search and replace
-
-### LSP & Formatting
-- `neovim/nvim-lspconfig` - Quickstart configs for Nvim LSP
-- `stevearc/conform.nvim` - Lightweight yet powerful formatter plugin
-- `folke/lazydev.nvim` - Lua LSP for Neovim
-
-### Git Integration
-- `lewis6991/gitsigns.nvim` - Git integration for buffers
-- `NeogitOrg/neogit` - Interactive Git interface for Neovim
-- `pwntester/octo.nvim` - Edit and review GitHub issues and pull requests
-- `tpope/vim-fugitive` - Git integration
-
-### Navigation & File Management
-- `ThePrimeagen/harpoon` - Mark and navigate files quickly
-- `stevearc/oil.nvim` - Neovim file explorer: edit your filesystem like a buffer
-- `nvim-neo-tree/neo-tree.nvim` - File system tree structure
-
-### Notebooks & Data Science
-- `kevinmcelroy/molten.nvim` - Jupyter kernel integration for Neovim
-- `echasnovski/mini.nvim` (jupytext) - Jupyter notebook support
-- `quarto-dev/quarto.nvim` - Quarto document support
-- `jmbuhr/otter.nvim` - Jupyter notebook integration
-
-### Terminal & Utilities
-- `akinsho/toggleterm.nvim` - Manage multiple terminal windows
-- `nvim-lua/plenary.nvim` - Lua utility functions
-
-### HTTP & API Testing
-- `mistweaverco/kulala.nvim` - HTTP request client for Neovim
-
-### Markdown & Documentation
-- `MeanderingProgrammer/render-markdown.nvim` - Improve viewing Markdown in Neovim
-- `iamcco/markdown-preview.nvim` - Markdown preview plugin
-- `OXY2DEV/markview.nvim` - Hackable markdown, Typst, latex, html previewer
-
-## ⚙️ Main Configuration
-
-### Key Settings
-```lua
-vim.g.mapleader = " "
-vim.g.maplocalleader = ","
+```text
+init.lua                       Startup order, leaders, default colorscheme
+lua/config/
+  bootstrap.lua                Find/install lazy.nvim and add it to runtimepath
+  providers.lua                Select the Python host for remote plugins
+  lazy.lua                     Plugin manager options and category imports
+  options.lua                  Editor options
+  autocmds.lua                  Editor lifecycle and buffer behavior
+  keymaps.lua                  Global keyboard shortcuts
+  diagnostics.lua              Diagnostic presentation
+  highlight.lua                Shared highlight customizations
+  dashboard.lua                Snacks dashboard layout and actions
+  cheatsheet.lua               Interactive shortcut reference
+  workflows.lua                Workflow commands and mappings
+  cmp.lua, luasnip.lua          Completion options and snippets
+  themes.lua, github-dark.lua  Theme picker and local theme implementation
+  env.lua                      Environment status helpers
+  runner.lua, molten_kernel.lua Python execution and notebook kernel helpers
+lua/plugins/
+  ui.lua, editor.lua, ...      Explicit category manifests
+  ui/, editor/, ...            Individual plugin specifications
+  lsp/interactive-rename.lua   Local LSP rename helper
+  lsp/signature.lua            Local LSP signature helper
+tests/                        Headless regression checks
 ```
 
-### Performance Options
-- Lazy loading via `lazy.nvim`
-- Disabled plugins: `gzip`, `tarPlugin`, `tohtml`, `tutor`, `zipPlugin`
-- Change detection enabled (no notifications)
-- Checker enabled (no notifications)
+Startup selects providers and bootstraps Lazy before loading editor options, plugins, autocommands, diagnostics, highlights, mappings, the cheatsheet, and workflows.
 
-### Python Host Configuration
-Pins the Neovim Python host to ensure remote plugins (e.g., `molten-nvim`) always find `pynvim`, regardless of project venvs.
+To add a plugin, put its spec in the appropriate category directory and add an import to that category's manifest. `config/lazy.lua` loads those manifests explicitly: files are not automatically enabled just because they sit in a category directory. Keep general UI configuration and shared editor helpers under `config/`; retain the existing LSP helper paths for compatibility.
 
-## 🔑 Key Bindings
+Keep plugin-specific bindings with the plugin spec and global editor bindings in `config/keymaps.lua`. Consult [KEYMAPS.md](KEYMAPS.md) and the dashboard's shortcut cheatsheet for mappings; the Lua definitions are authoritative.
 
-### Core Navigation
-- `<C-s>` - Save file
-- `<C-q>` - Quit (confirm if modified)
-- `<C-z>` - Undo
-- `<C-S-z>` - Redo
-- `<C-h/j/k/l>` - Window navigation
-- `<C-Up/Down/Left/Right>` - Resize windows
+## Configured stack
 
-### File & Buffer Management
-- `<C-]>` - Next buffer
-- `<A-[>` - Previous buffer
-- `<C-1>` to `<C-9>` - Jump to buffer 1-9
-- `<leader>tn` - New tab
-- `<leader>tc` - Close tab
-- `<leader>to` - Tab only
+| Area | Components |
+| --- | --- |
+| UI and search | Snacks dashboard, pickers, explorer and terminal; Which-key; Lualine; Ayu |
+| Navigation | Oil, Harpoon, Flash |
+| Editing | Treesitter, mini.map, Grug Far, TODO comments, render-markdown, Nabla, Kulala |
+| Completion | blink.cmp, LuaSnip, nvim-autopairs |
+| Language tooling | nvim-lspconfig, Mason, lazydev, Conform; local rename/signature helpers |
+| AI | Claude Code integration and Copilot through native LSP inline completion |
+| Git | Gitsigns and Snacks Git/Lazygit integrations |
+| Notebooks | Molten, Jupytext, Quarto, Otter |
 
-### Search & Pickers (Snacks)
-- `<Space>` - Smart find files
-- `.` - Live grep
-- `,` - Buffers
-- `<C-S-f>` - Find in files
-- `<C-e>` - Toggle Explorer
-- `<C-f>` - Fuzzy find in current buffer
+The Python provider tries the dedicated `stdpath("data")/python-host/bin/python` first, then available system Python candidates, selecting the first that imports `pynvim`. This keeps remote plugins independent of project virtual environments.
 
-### fff.nvim (Fast File Search)
-- `ff` - FFF file picker
-- `fg` - FFF live grep
+## Validation
 
-### AI & Assistant
-### LSP & Code Actions
-- `<F8>` - Show code actions
-- `<leader>ca` - Code action
-- `<leader>rn` - Rename symbol
-- `<leader>fm` - Format buffer
-
-### Git Operations
-- `<leader>gs` - Git status
-- `<leader>gd` - Git diff (hunks)
-- `<leader>gb` - Git browse
-- `<C-g>` / `<leader>lg` - Lazygit
-
-### Troubleshooting & Diagnostics
-- `<leader>xx` - Diagnostics (Trouble)
-- `<leader>xX` - Buffer Diagnostics (Trouble)
-- `<leader>cs` - Symbols (Trouble)
-- `<leader>cl` - LSP Definitions/references (Trouble)
-- `<leader>xL` - Location List (Trouble)
-- `<leader>xQ` - Quickfix List (Trouble)
-
-### TODO Comments
-- `<leader>st` - Todo Quickfix
-- `<leader>sT` - Todo/Fix/Fixme Quickfix
-
-## 🎨 Themes & Colorschemes
-
-Available color schemes:
-- `ayu-mirage` (default)
-- `ayu-dark`
-- `ayu-light`
-- `tokyonight`
-- `catppuccin`
-- `everforest`
-- `nightfox`
-- `kanagawa`
-
-## 📝 Notebooks & Jupyter Support
-
-The configuration includes comprehensive support for Jupyter notebooks and Quarto documents:
-
-- **Molten**: Jupyter kernel integration with inline execution
-- **Jupytext**: Sync notebooks with markdown files
-- **Quarto**: Quarto document support with live preview
-- **Otter**: Jupyter notebook integration for Neovim
-
-## 🛠️ Development Setup
-
-### Prerequisites
-- Neovim 0.10.0 or higher
-- Rust toolchain (for `fff.nvim` binary build)
-- `curl` and `git` for downloads
-
-### Installation
-
-1. Clone the configuration:
-```bash
-git clone <repository-url> ~/.config/nvim
-```
-
-2. Start Neovim and let `lazy.nvim` install plugins:
-```bash
-nvim
-```
-
-3. Build the `fff.nvim` Rust backend (if not pre-built):
-```bash
-:Lazy sync
-```
-
-### Configuration Files Structure
-
-```
-~/.config/nvim/
-├── init.lua                  # Main entry point
-├── lua/
-│   ├── config/
-│   │   ├── lazy.lua          # Lazy.nvim configuration
-│   │   ├── keymaps.lua       # Key bindings
-│   │   ├── cmp.lua           # Completion configuration
-│   │   └── ...
-│   └── plugins/
-│       ├── editor.lua        # Editor plugins
-│       ├── ui.lua            # UI plugins
-│       ├── lsp.lua           # LSP plugins
-│       ├── git.lua           # Git plugins
-│       ├── navigation.lua    # Navigation plugins
-│       ├── notebooks.lua     # Notebook plugins
-│       └── terminal.lua      # Terminal plugins
-├── KEYMAPS.md                # Keymap cheatsheet
-└── README.md                 # This file
-```
-
-## 🔄 Modern Stack
-
-This configuration uses the current state-of-the-art Neovim ecosystem:
-
-- **Completion**: `blink.cmp` + `LuaSnip` + `nvim-autopairs`
-- **UI Framework**: `folke/snacks.nvim`
-- **File Search**: `dmtrKovalenko/fff.nvim`
-- **AI Integration**: `CopilotChat.nvim`
-- **Formatting**: `stevearc/conform.nvim`
-- **Folding**: Native Treesitter + LSP (textDocument/foldingRange)
-- **Motion/Search**: `folke/flash.nvim`
-- **Keymaps Help**: `folke/which-key.nvim`
-
-## 📚 Documentation & Resources
-
-- [lazy.nvim docs](https://github.com/folke/lazy.nvim)
-- [blink.cmp docs](https://github.com/saghen/blink.cmp)
-- [snacks.nvim docs](https://github.com/folke/snacks.nvim)
-- [fff.nvim docs](https://github.com/dmtrKovalenko/fff.nvim)
----
-
-*Last updated: July 2026*
+See [tests/README.md](tests/README.md) for the headless checks. They exercise configuration behavior without installing plugins or starting real language servers; dashboard and plugin-spec checks require the corresponding plugins to be installed already.

@@ -6,7 +6,7 @@ return {
 
     ---@type snacks.Config
     opts = {
-        dashboard = require "plugins.dashboard",
+        dashboard = require "config.dashboard",
         bigfile = {
             enabled = true,
         },
