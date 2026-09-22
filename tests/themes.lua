@@ -1,8 +1,24 @@
 -- Run: nvim --headless -u NONE -i NONE -l tests/themes.lua
 local root = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":p:h:h")
 vim.opt.rtp:prepend(root)
+vim.opt.rtp:prepend(root .. "/local/theme-picker")
 local api = vim.api
-local picker = require "config.themes"
+local picker = require "theme_picker"
+local state = require "theme_picker.state"
+local readfile = vim.fn.readfile
+vim.fn.readfile = function() return { "github-dark", "invalid-background" } end
+picker.setup()
+assert(vim.g.current_theme == "github-dark", "startup restores saved theme")
+vim.fn.readfile = function() return { "nonexistent-theme", "dark" } end
+picker.setup()
+assert(vim.g.current_theme == "habamax", "missing saved/default themes use native fallback")
+vim.fn.readfile = readfile
+vim.g.current_theme = nil
+local saved
+state.save_theme = function(name) saved = name end
+assert(not package.loaded["theme_picker.picker"], "picker UI stays unloaded at startup")
+vim.cmd.colorscheme "github-dark"
+assert(vim.g.colors_name == "github-dark", "local colorscheme is discoverable")
 local origin = api.nvim_get_current_win()
 local original_completion = vim.fn.getcompletion
 vim.fn.getcompletion = function(_, kind)
@@ -53,6 +69,7 @@ assert(api.nvim_win_get_cursor(preview)[1] == 2)
 assert(api.nvim_win_get_cursor(input)[1] == 1)
 key(input_buf, "i", "<CR>")
 assert(vim.g.colors_name == "evening", "selected theme applied")
+assert(saved == "evening", "selected theme is persisted")
 assert(#api.nvim_list_wins() == 1 and not api.nvim_buf_is_valid(input_buf))
 picker.close()
 picker.toggle()

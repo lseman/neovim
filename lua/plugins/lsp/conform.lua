@@ -104,18 +104,18 @@ return {
             python = { "ruff_fix", "ruff_format" },
 
             -- Web stack: prefer biome when config exists, then prettier*
-            javascript = { "biome", "prettierd", "prettier" },
-            typescript = { "biome", "prettierd", "prettier" },
-            javascriptreact = { "biome", "prettierd", "prettier" },
-            typescriptreact = { "biome", "prettierd", "prettier" },
-            json = { "biome", "prettierd", "prettier" },
-            jsonc = { "biome", "prettierd", "prettier" },
+            javascript = { "biome", "prettierd", "prettier", stop_after_first = true },
+            typescript = { "biome", "prettierd", "prettier", stop_after_first = true },
+            javascriptreact = { "biome", "prettierd", "prettier", stop_after_first = true },
+            typescriptreact = { "biome", "prettierd", "prettier", stop_after_first = true },
+            json = { "biome", "prettierd", "prettier", stop_after_first = true },
+            jsonc = { "biome", "prettierd", "prettier", stop_after_first = true },
 
-            yaml = { "prettierd", "prettier" },
-            html = { "prettierd", "prettier" },
-            css = { "prettierd", "prettier" },
-            scss = { "prettierd", "prettier" },
-            markdown = { "prettierd", "prettier" },
+            yaml = { "prettierd", "prettier", stop_after_first = true },
+            html = { "prettierd", "prettier", stop_after_first = true },
+            css = { "prettierd", "prettier", stop_after_first = true },
+            scss = { "prettierd", "prettier", stop_after_first = true },
+            markdown = { "prettierd", "prettier", stop_after_first = true },
 
             cpp = { "clang-format" },
             c = { "clang-format" },
@@ -139,33 +139,15 @@ return {
             },
 
             biome = {
-                condition = function(ctx)
-                    return vim.fn.executable "biome" == 1
-                        and (
-                            vim.fs.find({ "biome.json", "biome.jsonc" }, {
-                                upward = true,
-                                path = ctx.filename,
-                            })[1] ~= nil
-                        )
+                condition = function(_, ctx)
+                    return vim.fs.find({ "biome.json", "biome.jsonc" }, {
+                        upward = true,
+                        path = vim.fs.dirname(ctx.filename),
+                    })[1] ~= nil
                 end,
             },
 
-            prettierd = {
-                condition = function(ctx)
-                    return vim.fn.executable "prettierd" == 1
-                end,
-            },
-
-            prettier = {
-                condition = function(ctx)
-                    return vim.fn.executable "prettier" == 1
-                        and vim.fn.executable "prettierd" ~= 1
-                        and not vim.fs.find({ "biome.json" }, {
-                            upward = true,
-                            path = ctx.filename,
-                        })[1]
-                end,
-            },
+            -- Use Conform's built-in executable discovery, including node_modules/.bin.
 
             ["cmake-format"] = {
                 prepend_args = {},

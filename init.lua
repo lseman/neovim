@@ -35,17 +35,3 @@ for _, mod in ipairs(modules) do
   safe_require(mod)
 end
 
-do
-  local saved_name, saved_bg = require("config.themes").load_saved_theme()
-  if saved_bg then vim.o.background = saved_bg end
-  local applied = saved_name or "ayu-mirage"
-  if not pcall(vim.cmd.colorscheme, applied) then
-    applied = "ayu-mirage"
-    pcall(vim.cmd.colorscheme, applied)
-  end
-  -- Some colorschemes (e.g. every ayu-* variant) set vim.g.colors_name to a
-  -- shared/generic value, so colors_name alone can't identify which named
-  -- variant is active. Track the exact applied name ourselves.
-  vim.g.current_theme = applied
-end
-

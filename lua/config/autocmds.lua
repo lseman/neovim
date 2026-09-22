@@ -103,6 +103,10 @@ autocmd("BufWritePre", {
         if vim.bo[bufnr].buftype ~= "" or not vim.bo[bufnr].modifiable or vim.bo[bufnr].binary then
             return
         end
+        -- Trailing double spaces encode hard line breaks in Markdown/Quarto.
+        if vim.bo[bufnr].filetype == "markdown" or vim.bo[bufnr].filetype == "quarto" then
+            return
+        end
 
         local view = vim.fn.winsaveview()
         local search = vim.fn.getreg "/"

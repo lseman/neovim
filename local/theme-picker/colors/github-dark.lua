@@ -322,6 +322,3 @@ hl("DiffAdd", { fg = "green", bg = "#052d1b" })
 hl("DiffChange", { fg = "blue", bg = "#0d1f31" })
 hl("DiffDelete", { fg = "red", bg = "#381f25" })
 hl("DiffText", { fg = "yellow", bg = "#362c0c" })
-
-
-print "github-dark loaded"

@@ -27,4 +27,4 @@ for test in tests/*.lua; do
 done
 ```
 
-The dashboard check requires an installed `snacks.nvim`. The other checks cover the shortcut cheatsheet and theme picker using real Neovim buffers and windows.
+The dashboard check requires an installed `snacks.nvim`. The editor regression check requires an installed `conform.nvim`; it covers Markdown/Quarto hard breaks, formatter project discovery and fallback selection, parser installation, and reparse timer cleanup, cancellation, and size limits without running external formatters or installing parsers. The other checks cover the shortcut cheatsheet and theme picker using real Neovim buffers and windows.

@@ -4,9 +4,9 @@ return {
         event = { "BufReadPre", "BufNewFile" },
         version = "*", -- pinned by :Lazy update
         dependencies = {
-            { "williamboman/mason.nvim", lazy = true, opts = { ui = { border = "rounded" } } },
+            { "mason-org/mason.nvim", lazy = true, opts = { ui = { border = "rounded" } } },
             {
-                "williamboman/mason-lspconfig.nvim",
+                "mason-org/mason-lspconfig.nvim",
                 opts = {
                     ensure_installed = { "basedpyright", "ruff", "lua_ls", "biome", "copilot" },
                     automatic_enable = true,

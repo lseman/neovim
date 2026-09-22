@@ -4,29 +4,7 @@
 local M = {}
 local api = vim.api
 
--- ── Persistence ──────────────────────────────────────────────────────────
--- Remembers the last theme picked so init.lua can re-apply it on the next
--- startup instead of always falling back to the hardcoded default.
-local STATE_FILE = vim.fn.stdpath "data" .. "/theme_picker_last.txt"
-
-M.save_theme = function(name)
-    local f = io.open(STATE_FILE, "w")
-    if not f then return end
-    f:write(name, "\n", vim.o.background or "dark")
-    f:close()
-end
-
--- Returns saved_name, saved_background (either may be nil if nothing was
--- ever saved, or the state file is missing/empty).
-M.load_saved_theme = function()
-    local f = io.open(STATE_FILE, "r")
-    if not f then return nil end
-    local name = f:read "l"
-    local bg = f:read "l"
-    f:close()
-    if not name or name == "" then return nil end
-    return name, bg
-end
+local state = require "theme_picker.state"
 
 -- Some colorschemes (e.g. neovim-ayu: every ayu-* variant sets
 -- vim.g.colors_name = "ayu" internally) don't reliably report which named
@@ -172,7 +150,7 @@ local function render_themes()
     api.nvim_buf_clear_namespace(S.buf, S.hl_ns, 0, -1)
 
     -- ── Phase 1: build text + column offsets for every row ────────────
-    -- (nvim_buf_add_highlight must run AFTER the text exists in the buffer —
+    -- (nvim_buf_set_extmark must run AFTER the text exists in the buffer —
     -- adding it against a still-empty/stale line clamps to a zero-width
     -- range, so highlights silently never attach. Hence the two-phase split.)
     local lines = {}
@@ -197,7 +175,7 @@ local function render_themes()
         end
 
         -- Build the text, tracking byte offsets (not char counts) since
-        -- "●" is multi-byte UTF-8 and nvim_buf_add_highlight wants bytes.
+        -- "●" is multi-byte UTF-8 and nvim_buf_set_extmark wants bytes.
         local col = 0
         local pieces = {}
         local function put(s)
@@ -266,16 +244,16 @@ local function render_themes()
     -- ── Phase 2: now that the text exists, attach highlights to it ─────
     for i, row in ipairs(rows) do
         -- ── Background: apply theme bg to the entire row ──────────────
-        api.nvim_buf_add_highlight(S.buf, S.hl_ns, "TP_bg_" .. row.safe, i - 1, 0, row.line_len)
+        api.nvim_buf_set_extmark(S.buf, S.hl_ns, i - 1, 0, { end_col = row.line_len, hl_group = "TP_bg_" .. row.safe })
 
         -- ── Name highlight: theme fg on theme bg, bold when selected ──
         local name_hl = (row.is_active_row and "TP_name_active_" or "TP_name_") .. row.safe
-        api.nvim_buf_add_highlight(S.buf, S.hl_ns, name_hl, i - 1, row.name_start, row.name_end)
+        api.nvim_buf_set_extmark(S.buf, S.hl_ns, i - 1, row.name_start, { end_col = row.name_end, hl_group = name_hl })
 
         -- ── Swatch dots: each gets its own color, circular and spaced ─
         for _, dot in ipairs(row.dots) do
             local hl_name = "TP_sw_" .. row.safe .. "_" .. dot.key
-            api.nvim_buf_add_highlight(S.buf, S.hl_ns, hl_name, i - 1, dot.start, dot.stop)
+            api.nvim_buf_set_extmark(S.buf, S.hl_ns, i - 1, dot.start, { end_col = dot.stop, hl_group = hl_name })
         end
     end
 
@@ -408,7 +386,7 @@ M.open = function()
         if not ok then vim.notify(err, vim.log.levels.ERROR); return end
         S.confirmed = true
         vim.g.current_theme = chosen
-        M.save_theme(chosen)
+        state.save_theme(chosen)
         vim.notify("Theme: " .. chosen, vim.log.levels.INFO)
         M.close()
     end

@@ -14,7 +14,7 @@ Start `nvim` to bootstrap lazy.nvim and install missing plugins. The committed `
 ## Where things belong
 
 ```text
-init.lua                       Startup order, leaders, default colorscheme
+init.lua                       Startup order and leaders
 lua/config/
   bootstrap.lua                Find/install lazy.nvim and add it to runtimepath
   providers.lua                Select the Python host for remote plugins
@@ -28,7 +28,6 @@ lua/config/
   cheatsheet.lua               Interactive shortcut reference
   workflows.lua                Workflow commands and mappings
   cmp.lua, luasnip.lua          Completion options and snippets
-  themes.lua, github-dark.lua  Theme picker and local theme implementation
   env.lua                      Environment status helpers
   runner.lua, molten_kernel.lua Python execution and notebook kernel helpers
 lua/plugins/
@@ -36,10 +35,18 @@ lua/plugins/
   ui/, editor/, ...            Individual plugin specifications
   lsp/interactive-rename.lua   Local LSP rename helper
   lsp/signature.lua            Local LSP signature helper
+  ui/themes.lua                Local theme plugin and Ayu dependency
+local/theme-picker/
+  lua/theme_picker/            Saved-theme state and on-demand swatch picker
+  colors/github-dark.lua       Local colorscheme exposed through :colorscheme
 tests/                        Headless regression checks
 ```
 
 Startup selects providers and bootstraps Lazy before loading editor options, plugins, autocommands, diagnostics, highlights, mappings, the cheatsheet, and workflows.
+
+The local `theme-picker` plugin restores the saved theme before other UI plugins load; its picker UI loads only when opened. Both `<leader>T` and `<leader>uC` open the same picker, with preview, cancellation, and persistent selection. Existing saved selections are retained. Snacks loads at startup so its dashboard and big-file hooks can observe the first buffer.
+
+Neovim 0.12 provides native LSP on-type formatting (`vim.lsp.on_type_formatting.enable()`), which is opt-in and requires server support. Conform remains responsible for format-on-save, external formatter selection, and multi-step formatting such as Ruff fixes followed by Ruff formatting. Native `vim.pack` is available, but this configuration uses Lazy for dependency ordering, loading triggers, build hooks, and its management UI.
 
 To add a plugin, put its spec in the appropriate category directory and add an import to that category's manifest. `config/lazy.lua` loads those manifests explicitly: files are not automatically enabled just because they sit in a category directory. Keep general UI configuration and shared editor helpers under `config/`; retain the existing LSP helper paths for compatibility.
 

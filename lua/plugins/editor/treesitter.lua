@@ -38,6 +38,7 @@ local excluded_filetypes = {
 return {
     "nvim-treesitter/nvim-treesitter",
     lazy = false,
+    opts = { ensure_installed = ensure_installed },
     build = ":TSUpdate",
     dependencies = {
         {
@@ -97,13 +98,13 @@ return {
         },
     },
 
-    config = function()
+    config = function(_, opts)
         local treesitter = require "nvim-treesitter"
 
         -- `main` is a full rewrite: setup now only configures the install path.
         -- Parsers and queries live together under stdpath("data")/site.
         treesitter.setup()
-        treesitter.install(ensure_installed)
+        treesitter.install(opts.ensure_installed)
 
         local group = vim.api.nvim_create_augroup("TreesitterFeatures", { clear = true })
         vim.api.nvim_create_autocmd("FileType", {
@@ -170,7 +171,19 @@ return {
                             150,
                             0,
                             vim.schedule_wrap(function()
+                                -- A newer edit or buffer deletion can invalidate a queued callback.
+                                if reparse_timers[bufnr] ~= timer then
+                                    return
+                                end
+                                timer:close()
                                 reparse_timers[bufnr] = nil
+                                if not vim.api.nvim_buf_is_loaded(bufnr) then
+                                    return
+                                end
+                                local size = vim.api.nvim_buf_get_offset(bufnr, vim.api.nvim_buf_line_count(bufnr))
+                                if size > 200 * 1024 then
+                                    return
+                                end
                                 local ok, parser = pcall(vim.treesitter.get_parser, bufnr)
                                 if ok and parser then
                                     parser:parse(true)

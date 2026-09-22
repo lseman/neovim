@@ -2,7 +2,8 @@ vim.g.snacks_animate = false
 
 return {
     "folke/snacks.nvim",
-    event = "User FilePost",
+    lazy = false,
+    priority = 1000,
 
     ---@type snacks.Config
     opts = {
@@ -329,13 +330,6 @@ return {
             desc = "Registers",
         },
         {
-            "<leader>T",
-            function()
-                require("config.themes").toggle()
-            end,
-            desc = "Theme Picker",
-        },
-        {
             "<leader>s/",
             function()
                 Snacks.picker.search_history()
@@ -404,13 +398,6 @@ return {
                 Snacks.picker.undo()
             end,
             desc = "Undo History",
-        },
-        {
-            "<leader>uC",
-            function()
-                Snacks.picker.colorschemes()
-            end,
-            desc = "Colorschemes",
         },
         {
             "<leader>fd",

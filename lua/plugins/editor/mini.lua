@@ -1,6 +1,6 @@
 return {
     {
-        "echasnovski/mini.map",
+        "nvim-mini/mini.map",
         version = false,
     event = "User FilePost",
 

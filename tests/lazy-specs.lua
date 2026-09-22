@@ -26,4 +26,8 @@ for _, name in ipairs({ "nvim-lspconfig", "flash.nvim", "snacks.nvim", "oil.nvim
 end
 assert(type(require "plugins.lsp.interactive-rename") == "function")
 assert(type(require("plugins.lsp.signature").setup) == "function")
+assert(spec.plugins["theme-picker"] and vim.fn.isdirectory(spec.plugins["theme-picker"].dir) == 1)
+assert(spec.plugins["theme-picker"].priority > spec.plugins["snacks.nvim"].priority)
+assert(spec.plugins["snacks.nvim"].lazy == false, "Snacks must register first-buffer hooks at startup")
+assert(not spec.plugins["luvit-meta"], "LuaLS supplies the luv addon")
 print("PASS: complete Lazy spec tree parses; both LSP helpers remain loadable")

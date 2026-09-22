@@ -1,5 +1,5 @@
 return {
-    { import = "plugins.ui.ayu" },
+    { import = "plugins.ui.themes" },
     { import = "plugins.ui.bqf" },
     { import = "plugins.ui.colorizer" },
     { import = "plugins.ui.fidget" },
