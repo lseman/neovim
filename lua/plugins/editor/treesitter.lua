@@ -33,6 +33,7 @@ local excluded_filetypes = {
     mason = true,
     alpha = true,
     dashboard = true,
+    bigfile = true,
 }
 
 return {
@@ -122,9 +123,7 @@ return {
                 -- for any such notebook, which looked like broken/missing
                 -- syntax highlighting with no relation to the actual size
                 -- of what's on screen.
-                local line_count = vim.api.nvim_buf_line_count(args.buf)
-                local ok_size, byte_size = pcall(vim.api.nvim_buf_get_offset, args.buf, line_count)
-                if ok_size and byte_size > 200 * 1024 then
+                if require("config.buffer").is_large(args.buf, require("config.buffer").treesitter_bytes) then
                     return
                 end
 
@@ -180,8 +179,7 @@ return {
                                 if not vim.api.nvim_buf_is_loaded(bufnr) then
                                     return
                                 end
-                                local size = vim.api.nvim_buf_get_offset(bufnr, vim.api.nvim_buf_line_count(bufnr))
-                                if size > 200 * 1024 then
+                                if require("config.buffer").is_large(bufnr, require("config.buffer").treesitter_bytes) then
                                     return
                                 end
                                 local ok, parser = pcall(vim.treesitter.get_parser, bufnr)

@@ -15,6 +15,7 @@ local source_win = api.nvim_get_current_win()
 local handler = function() end
 local client = {
     id = 1,
+    is_stopped = function() return false end,
     offset_encoding = "utf-16",
     handlers = { ["textDocument/rename"] = handler },
     server_capabilities = { signatureHelpProvider = { triggerCharacters = { "(" } } },
@@ -72,6 +73,19 @@ assert(api.nvim_get_current_line() == "target", "UTF-16 range resolves the symbo
 key("<Esc>")
 vim.wait(10)
 
+for _, encoding in ipairs({ "utf-8", "utf-16", "utf-32" }) do
+    client.offset_encoding = encoding
+    local start = encoding == "utf-8" and 5 or encoding == "utf-16" and 3 or 2
+    rename()
+    requests[#requests].callback(nil, {
+        range = { start = { line = 0, character = start }, ["end"] = { line = 0, character = start + 6 } },
+    })
+    assert(api.nvim_get_current_line() == "target", encoding .. " range resolves the symbol")
+    key("<Esc>")
+    vim.wait(10)
+end
+client.offset_encoding = "utf-16"
+
 client.supports_method = function(_, method) return method ~= "textDocument/prepareRename" end
 rename()
 assert(api.nvim_get_current_line() == "target", "rename without prepare uses current word")
@@ -116,11 +130,25 @@ package.preload["blink.cmp"] = function() return { get_lsp_capabilities = functi
 package.preload["clangd_extensions"] = function() return { setup = function() end } end
 package.preload["cmake-tools"] = function() return { setup = function() end } end
 local attach
-vim.lsp.config = function(name, opts) if name == "*" then attach = opts.on_attach end end
+vim.lsp.config = setmetatable({
+    basedpyright = { filetypes = { "python" } },
+    ruff = { filetypes = { "python" } },
+    lua_ls = { filetypes = { "lua" } },
+    clangd = { filetypes = { "c", "cpp" } },
+    biome = { filetypes = { "javascript", "typescript" } },
+    vhdl_ls = { filetypes = { "vhdl" } },
+}, {
+    __call = function(configs, name, opts)
+        configs[name] = vim.tbl_deep_extend("force", configs[name] or {}, opts)
+        if name == "*" then attach = opts.on_attach end
+    end,
+})
 vim.lsp.enable = function() end
 vim.lsp.inlay_hint.enable = function() end
 require("plugins.lsp.lspconfig")[1].config()
 assert(type(attach) == "function")
+assert(vim.tbl_contains(vim.lsp.config.copilot.filetypes, "python"))
+assert(not vim.tbl_contains(vim.lsp.config.copilot.filetypes, "markdown"))
 attach(client, source)
 local found = false
 for _, map in ipairs(api.nvim_buf_get_keymap(source, "n")) do

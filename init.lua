@@ -1,3 +1,8 @@
+if vim.fn.has "nvim-0.12" == 0 then
+    vim.api.nvim_err_writeln("This configuration requires Neovim 0.12 or newer")
+    return
+end
+
 -- Disable Neovim's built-in directory buffer to avoid conflicts with oil.nvim
 vim.g.loaded_nvim_dir_plugin = 1
 

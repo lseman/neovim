@@ -28,3 +28,7 @@ done
 ```
 
 The dashboard check requires an installed `snacks.nvim`. The editor regression check requires an installed `conform.nvim`; it covers Markdown/Quarto hard breaks, formatter project discovery and fallback selection, parser installation, and reparse timer cleanup, cancellation, and size limits without running external formatters or installing parsers. The other checks cover the shortcut cheatsheet and theme picker using real Neovim buffers and windows.
+
+`runner-workflows.lua` requires Python 3 and `/bin/sh`. It checks literal snippet/file quoting, multiline selections, terminal reuse and restart, switching between existing project buffers, and large-file formatting guards using temporary files and local shell jobs.
+
+`modernization.lua` covers restoration of inherited environments, subscription and terminal state across reloads, idempotent autocommands, independent global/buffer format toggles, one-shot FilePost, per-window folding on attachment/detachment, and notebook-aware buffer-size guards.

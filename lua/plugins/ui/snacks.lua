@@ -10,6 +10,7 @@ return {
         dashboard = require "config.dashboard",
         bigfile = {
             enabled = true,
+            size = require("config.buffer").large_file_bytes,
         },
         explorer = {
             enabled = true,

@@ -43,6 +43,20 @@ end
 available.ruff_fix, available.ruff_format = true, true
 assert(#conform.resolve_formatters(opts.formatters_by_ft.python, 0, false, false) == 2)
 
+-- Explicit ranges must not depend on stale visual-selection marks.
+require("plugins.lsp.conform").config(nil, opts)
+local real_format = conform.format
+local formatted
+conform.format = function(options) formatted = options end
+api.nvim_buf_set_lines(0, 0, -1, false, { "first", "second", "last 😀", "outside" })
+api.nvim_buf_set_mark(0, "<", 1, 0, {})
+api.nvim_buf_set_mark(0, ">", 1, 0, {})
+vim.cmd "2,3FormatRange"
+assert(vim.deep_equal(formatted.range, { start = { 2, 0 }, ["end"] = { 3, #"last 😀" } }))
+vim.cmd "1,1FormatRange"
+assert(vim.deep_equal(formatted.range, { start = { 1, 0 }, ["end"] = { 1, #"first" } }))
+conform.format = real_format
+
 local installed, parsed = {}, 0
 package.loaded["nvim-treesitter"] = {
     setup = function() end,
@@ -64,6 +78,7 @@ vim.uv.new_timer = function()
     local timer = { closed = false }
     function timer:start(_, _, callback) self.callback = callback end
     function timer:stop() end
+    function timer:is_closing() return self.closed end
     function timer:close() assert(not self.closed); self.closed = true end
     timers[#timers + 1] = timer
     return timer

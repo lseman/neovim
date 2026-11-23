@@ -1,15 +1,19 @@
+local servers = { "basedpyright", "ruff", "clangd", "lua_ls", "biome", "vhdl_ls", "copilot" }
+
 return {
     {
         "neovim/nvim-lspconfig",
         event = { "BufReadPre", "BufNewFile" },
         version = "*", -- pinned by :Lazy update
         dependencies = {
-            { "mason-org/mason.nvim", lazy = true, opts = { ui = { border = "rounded" } } },
             {
                 "mason-org/mason-lspconfig.nvim",
+                dependencies = {
+                    { "mason-org/mason.nvim", opts = { ui = { border = "rounded" } } },
+                },
                 opts = {
                     ensure_installed = { "basedpyright", "ruff", "lua_ls", "biome", "copilot" },
-                    automatic_enable = true,
+                    automatic_enable = false,
                 },
             },
             "p00f/clangd_extensions.nvim",
@@ -24,7 +28,7 @@ return {
 
             local function diagnostic_jump(count)
                 return function()
-                    vim.diagnostic.jump({ count = count, float = false })
+                    vim.diagnostic.jump({ count = count })
                 end
             end
 
@@ -35,6 +39,12 @@ return {
             end
 
             local on_attach = function(client, bufnr)
+                if require("config.buffer").is_large(bufnr) then
+                    vim.schedule(function()
+                        if vim.api.nvim_buf_is_valid(bufnr) then vim.lsp.buf_detach_client(bufnr, client.id) end
+                    end)
+                    return
+                end
                 signature.setup(client, bufnr)
                 local map = function(mode, lhs, rhs, desc)
                     vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, desc = desc, silent = true })
@@ -114,20 +124,13 @@ return {
 
             -- Attach Copilot only where real code LSP servers attach: its value is
             -- inline completion, so prose buffers gain nothing from the server.
-            -- Keep this list in sync with vim.lsp.enable below.
-            local function server_filetypes(server)
-                -- Indexing vim.lsp.config fails under the test mock, which
-                -- replaces it with the setter function; skip gracefully there.
-                local ok, cfg = pcall(function()
-                    return vim.lsp.config[server]
-                end)
-                return ok and cfg and cfg.filetypes or nil
-            end
             do
                 local code_fts = {}
-                for _, server in ipairs({ "basedpyright", "ruff", "clangd", "lua_ls", "biome", "vhdl_ls" }) do
-                    for _, ft in ipairs(server_filetypes(server) or {}) do
-                        code_fts[ft] = true
+                for _, server in ipairs(servers) do
+                    if server ~= "copilot" then
+                        for _, ft in ipairs(vim.lsp.config[server].filetypes or {}) do
+                            code_fts[ft] = true
+                        end
                     end
                 end
                 if next(code_fts) then
@@ -135,15 +138,17 @@ return {
                 end
             end
 
-            vim.lsp.enable({ "basedpyright", "ruff", "clangd", "lua_ls", "biome", "vhdl_ls", "copilot" })
+            vim.lsp.enable(servers)
 
             -- Native LSP inline completion (0.12): copilot-language-server (via
             -- nvim-lspconfig's bundled `lsp/copilot.lua`) speaks
             -- textDocument/inlineCompletion, so no ghost-text plugin is needed.
             vim.api.nvim_create_autocmd("LspAttach", {
+                group = vim.api.nvim_create_augroup("ConfigInlineCompletion", { clear = true }),
                 callback = function(args)
                     local client = vim.lsp.get_client_by_id(args.data.client_id)
-                    if client and client:supports_method "textDocument/inlineCompletion" then
+                    if client and not require("config.buffer").is_large(args.buf)
+                        and client:supports_method "textDocument/inlineCompletion" then
                         vim.lsp.inline_completion.enable(true, { bufnr = args.buf })
                     end
                 end,

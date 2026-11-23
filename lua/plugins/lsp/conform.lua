@@ -19,7 +19,7 @@ return {
 
     init = function()
         -- Global toggle for format-on-save
-        vim.g.disable_autoformat = false
+        if vim.g.disable_autoformat == nil then vim.g.disable_autoformat = false end
 
         vim.api.nvim_create_user_command("FormatDisable", function(args)
             if args.bang then
@@ -35,11 +35,15 @@ return {
         })
 
         vim.api.nvim_create_user_command("FormatEnable", function(args)
-            vim.b.disable_autoformat = false
-            vim.g.disable_autoformat = false
-            vim.notify("Format-on-save enabled", vim.log.levels.INFO)
+            if args.bang then
+                vim.b.disable_autoformat = false
+            else
+                vim.g.disable_autoformat = false
+            end
+            vim.notify("Format-on-save enabled (" .. (args.bang and "buffer-local" or "global") .. ")", vim.log.levels.INFO)
         end, {
             desc = "Enable autoformat-on-save",
+            bang = true,
         })
     end,
 
@@ -47,7 +51,7 @@ return {
         -- Format on save (main logic here)
         format_on_save = function(bufnr)
             -- Respect global/buffer toggle
-            if vim.g.disable_autoformat or vim.b[bufnr].disable_autoformat then
+            if vim.g.disable_autoformat or vim.b[bufnr].disable_autoformat or vim.b[bufnr].large_file then
                 return
             end
 
@@ -61,6 +65,7 @@ return {
                 or fname:match "/%.venv/"
                 or fname:match "/site%-packages/"
                 or vim.api.nvim_buf_line_count(bufnr) > 20000
+                or require("config.buffer").is_large(bufnr)
             then
                 return
             end
@@ -127,9 +132,6 @@ return {
 
         -- Formatter customizations
         formatters = {
-            stylua = {
-                prepend_args = { "--indent-type", "Spaces", "--indent-width", "2" },
-            },
             ruff_fix = {
                 prepend_args = {}, -- only organize imports
             },
@@ -153,9 +155,6 @@ return {
                 prepend_args = {},
             },
 
-            ["clang-format"] = {
-                prepend_args = { "--style", "{BasedOnStyle: Google, IndentWidth: 4}" },
-            },
 
             ["google-java-format"] = {
                 -- no special args needed
@@ -174,15 +173,14 @@ return {
         require("conform").setup(opts)
 
         -- Optional: visual mode range formatting
-        vim.api.nvim_create_user_command("FormatRange", function()
-            local start = vim.fn.getpos("'<")[2]
-            local end_ = vim.fn.getpos("'>")[2]
+        vim.api.nvim_create_user_command("FormatRange", function(args)
+            local last_line = vim.api.nvim_buf_get_lines(0, args.line2 - 1, args.line2, false)[1] or ""
             require("conform").format({
                 async = true,
                 lsp_format = "fallback",
                 range = {
-                    start = { start, 0 },
-                    ["end"] = { end_, 0 },
+                    start = { args.line1, 0 },
+                    ["end"] = { args.line2, #last_line },
                 },
             })
         end, {

@@ -29,6 +29,10 @@ lua/config/
   workflows.lua                Workflow commands and mappings
   cmp.lua, luasnip.lua          Completion options and snippets
   env.lua                      Environment status helpers
+  environment.lua              Project environment discovery and activation
+  buffer.lua                   Shared buffer-size limits
+  health.lua                   Native :checkhealth config checks
+  reload.lua                   Reapply editor settings while preserving live state
   runner.lua, molten_kernel.lua Python execution and notebook kernel helpers
 lua/plugins/
   ui.lua, editor.lua, ...      Explicit category manifests
@@ -66,6 +70,16 @@ Keep plugin-specific bindings with the plugin spec and global editor bindings in
 | Notebooks | Molten, Jupytext, Quarto, Otter |
 
 The Python provider tries the dedicated `stdpath("data")/python-host/bin/python` first, then available system Python candidates, selecting the first that imports `pynvim`. This keeps remote plugins independent of project virtual environments.
+
+## Maintenance and runtime behavior
+
+- `:ConfigHealth` (or `:checkhealth config`) checks configuration dependencies without loading optional plugins. `:HealthCheck` remains an alias.
+- `:Rconf` reloads editor options, mappings, autocommands, diagnostics, highlights, and workflow commands. It preserves terminals and environment subscriptions. Restart Neovim after changing plugin specs, providers, or helper implementations.
+- Python and notebook buffers discover project virtual environments on creation and entry. Leaving for a project without an environment restores the inherited environment. Version checks run asynchronously, once per discovered environment; the remote Python plugin host stays separate.
+- Large-buffer guards use displayed content instead of notebook file size. Shared limits are 1 MiB for editor/LSP/formatting guards and 200 KiB for Tree-sitter work. Snacks uses the same 1 MiB threshold and also detects minified files.
+- Mason installs the configured tool list; `vim.lsp.enable` owns server activation. Folding switches between LSP and Tree-sitter as clients attach and detach, including multiple windows.
+- `:FormatDisable` / `:FormatEnable` control global format-on-save. Their bang forms change only the current buffer; formatting runs only when both scopes permit it.
+- `:PyRunSelection` accepts explicit line ranges; visual selections use Neovim's region extraction. Python code and paths are escaped before reaching the shell. `:PyRunArgs` accepts shell argument syntax.
 
 ## Validation
 

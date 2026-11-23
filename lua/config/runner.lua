@@ -48,13 +48,9 @@ local function notify(msg, level)
     end
 end
 
-local function is_valid(buf, win)
-    return buf and vim.api.nvim_buf_is_valid(buf) and win and vim.api.nvim_win_is_valid(win)
-end
-
 local function get_python()
-    local ok, venv = pcall(require, "venv")
-    return ok and venv.current() and venv.current().python or M.config.python_cmd
+    local python = M.config.python_cmd
+    return vim.fn.exepath(python) ~= "" and vim.fn.exepath(python) or python
 end
 
 local function add_to_history(cmd)
@@ -107,23 +103,43 @@ local function create_terminal_window()
     return vim.api.nvim_get_current_win(), nil
 end
 
-local function start_terminal()
-    local win, buf = create_terminal_window()
-    buf = buf or vim.api.nvim_create_buf(false, true)
+local function get_terminal()
+    local buf, win, job = M.state.terminal_buf, M.state.terminal_win, M.state.terminal_job
+    local running = job and vim.fn.jobwait({ job }, 0)[1] == -1
+    if not (win and vim.api.nvim_win_is_valid(win)) then
+        local placeholder
+        win, placeholder = create_terminal_window()
+        if running and buf and vim.api.nvim_buf_is_valid(buf) then
+            vim.api.nvim_win_set_buf(win, buf)
+            if placeholder then
+                vim.api.nvim_buf_delete(placeholder, { force = true })
+            end
+        else
+            buf = placeholder or vim.api.nvim_create_buf(false, true)
+        end
+    elseif not running then
+        buf = vim.api.nvim_create_buf(false, true)
+    end
+    local old_buf = M.state.terminal_buf
     vim.api.nvim_win_set_buf(win, buf)
     M.state.terminal_buf, M.state.terminal_win = buf, win
-    M.state.terminal_job = vim.fn.termopen(M.config.shell, {
-        on_exit = function()
-            M.state.terminal_job = nil
-        end,
-    })
-end
-
-local function get_terminal()
-    if not is_valid(M.state.terminal_buf, M.state.terminal_win) then
-        start_terminal()
+    if not running then
+        job = vim.api.nvim_buf_call(buf, function()
+            return vim.fn.jobstart({ M.config.shell }, {
+                term = true,
+                on_exit = function(exited_job)
+                    if M.state.terminal_job == exited_job then
+                        M.state.terminal_job = nil
+                    end
+                end,
+            })
+        end)
+        M.state.terminal_job = job
+        if old_buf and old_buf ~= buf and vim.api.nvim_buf_is_valid(old_buf) then
+            vim.api.nvim_buf_delete(old_buf, { force = true })
+        end
     end
-    return M.state.terminal_buf, M.state.terminal_win, M.state.terminal_job
+    return buf, win, job
 end
 
 local function send(cmd)
@@ -150,7 +166,7 @@ function M.run_file(path)
     if M.config.auto_save and vim.bo.modified then
         vim.cmd "write"
     end
-    local cmd = string.format('%s "%s"', get_python(), path)
+    local cmd = string.format("%s %s", vim.fn.shellescape(get_python()), vim.fn.shellescape(path))
     add_to_history(cmd)
     M.state.last_command = cmd
     notify("Running: " .. vim.fn.fnamemodify(path, ":t"))
@@ -161,25 +177,26 @@ function M.run_code(code)
     if not code or code:match "^%s*$" then
         return notify("Empty code", vim.log.levels.WARN)
     end
-    local escaped = code:gsub("\\", "\\\\"):gsub('"', '\\"')
-    local cmd = string.format('%s -c "%s"', get_python(), escaped)
+    local escaped = vim.fn.shellescape("exec(" .. vim.json.encode(code) .. ")")
+    local cmd = string.format("%s -c %s", vim.fn.shellescape(get_python()), escaped)
     add_to_history(cmd)
     M.state.last_command = cmd
     notify "Running snippet"
     send(cmd)
 end
 
-function M.run_selection()
-    local s, e = vim.fn.getpos "'<", vim.fn.getpos "'>"
-    if s[2] == 0 or e[2] == 0 then
-        return notify("No selection", vim.log.levels.WARN)
+function M.run_selection(args)
+    local lines
+    if args and args.range and args.range > 0 then
+        lines = vim.api.nvim_buf_get_lines(0, args.line1 - 1, args.line2, false)
+    else
+        local start, finish = vim.fn.getpos "'<", vim.fn.getpos "'>"
+        if start[2] == 0 or finish[2] == 0 then
+            return notify("No selection", vim.log.levels.WARN)
+        end
+        local mode = vim.fn.visualmode()
+        lines = vim.fn.getregion(start, finish, { type = mode ~= "" and mode or "v" })
     end
-    local lines = vim.api.nvim_buf_get_lines(0, s[2] - 1, e[2], false)
-    if #lines == 0 then
-        return notify("Empty selection", vim.log.levels.WARN)
-    end
-    lines[1] = lines[1]:sub(s[3])
-    lines[#lines] = lines[#lines]:sub(1, e[3])
     M.run_code(table.concat(lines, "\n"))
 end
 
@@ -192,7 +209,7 @@ function M.run_line()
 end
 
 function M.run_interactive()
-    local cmd = get_python()
+    local cmd = vim.fn.shellescape(get_python())
     add_to_history(cmd)
     M.state.last_command = cmd
     notify "Starting Python REPL"
@@ -205,7 +222,7 @@ function M.run_with_args(args)
         return notify("No file", vim.log.levels.WARN)
     end
     local function run(argline)
-        local cmd = string.format('%s "%s" %s', get_python(), path, argline)
+        local cmd = string.format("%s %s %s", vim.fn.shellescape(get_python()), vim.fn.shellescape(path), argline)
         if M.config.auto_save and vim.bo.modified then
             vim.cmd "write"
         end
@@ -263,10 +280,10 @@ function M.toggle_terminal()
 end
 
 function M.close_terminal()
-    if M.state.terminal_win then
+    if M.state.terminal_win and vim.api.nvim_win_is_valid(M.state.terminal_win) then
         vim.api.nvim_win_close(M.state.terminal_win, false)
     end
-    if M.state.terminal_buf then
+    if M.state.terminal_buf and vim.api.nvim_buf_is_valid(M.state.terminal_buf) then
         vim.api.nvim_buf_delete(M.state.terminal_buf, {
             force = true,
         })
@@ -304,6 +321,7 @@ function M.setup(opts)
     vim.api.nvim_create_user_command("PyClearHistory", M.clear_history, {})
 
     vim.api.nvim_create_autocmd("FileType", {
+        group = vim.api.nvim_create_augroup("PythonRunner", { clear = true }),
         pattern = "python",
         callback = function()
             local opts = {

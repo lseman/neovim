@@ -12,31 +12,26 @@ end
 -- User FilePost: fires after UIEnter + real file buffer.
 -- All plugins subscribe to this instead of scattered events.
 -- ============================================================
-autocmd({ "UIEnter", "BufReadPost", "BufNewFile" }, {
-    group = group "NvFilePost",
-    callback = function(args)
-        local file = vim.api.nvim_buf_get_name(args.buf)
-        local buftype = vim.api.nvim_get_option_value("buftype", { buf = args.buf })
-
-        if not vim.g.ui_entered and args.event == "UIEnter" then
-            vim.g.ui_entered = true
-        end
-
-        if file ~= "" and buftype ~= "nofile" and vim.g.ui_entered then
+local file_post_group = group "NvFilePost"
+if not vim.g.config_file_post then
+    autocmd({ "UIEnter", "BufReadPost", "BufNewFile" }, {
+        group = file_post_group,
+        callback = function(args)
+            if args.event == "UIEnter" then vim.g.ui_entered = true end
+            local file = vim.api.nvim_buf_get_name(args.buf)
+            if file == "" or vim.bo[args.buf].buftype ~= "" or not vim.g.ui_entered then return end
+            vim.g.config_file_post = true
             vim.api.nvim_exec_autocmds("User", { pattern = "FilePost", modeline = false })
             vim.api.nvim_del_augroup_by_name "NvFilePost"
-
             vim.schedule(function()
-                vim.api.nvim_exec_autocmds("FileType", {})
-
-                if vim.g.editorconfig then
-                    local ok, ec = pcall(require, "editorconfig")
-                    if ok then ec.config(args.buf) end
-                end
+                if not vim.api.nvim_buf_is_valid(args.buf) then return end
+                vim.api.nvim_buf_call(args.buf, function()
+                    vim.api.nvim_exec_autocmds("FileType", { buffer = args.buf, modeline = false })
+                end)
             end)
-        end
-    end,
-})
+        end,
+    })
+end
 
 -- Terminal and cursor settings
 autocmd("ExitPre", {
@@ -87,7 +82,7 @@ end
 autocmd("TextYankPost", {
     group = group "HighlightYank",
     callback = function()
-        vim.hl.on_yank({
+        (vim.hl.hl_op or vim.hl.on_yank)({
             higroup = "IncSearch",
             timeout = 200
         })
@@ -159,39 +154,37 @@ autocmd("VimResized", {
     desc = "Auto-resize windows"
 })
 
--- Large file guard: disable expensive features for files > 1MB
-autocmd("BufReadPre", {
+-- Inspect displayed content, including notebooks converted through BufReadCmd.
+autocmd({ "BufReadPost", "FileType" }, {
     group = group "LargeFile",
     callback = function(args)
-        local ok, stat = pcall(vim.uv.fs_stat, vim.api.nvim_buf_get_name(args.buf))
-        if not ok or not stat or stat.size < 1024 * 1024 then
-            return
-        end
+        if vim.bo[args.buf].buftype ~= "" or not require("config.buffer").is_large(args.buf) then return end
         vim.b[args.buf].large_file = true
-        vim.opt_local.swapfile = false
-        vim.opt_local.undofile = false
-        vim.opt_local.foldmethod = "manual"
-        vim.opt_local.syntax = "off"
-        vim.api.nvim_create_autocmd("BufReadPost", {
-            buffer = args.buf,
-            once = true,
-            callback = function()
-                vim.treesitter.stop(args.buf)
-            end
-        })
+        vim.bo[args.buf].undofile = false
+        vim.treesitter.stop(args.buf)
+        for _, win in ipairs(vim.fn.win_findbuf(args.buf)) do
+            vim.wo[win].foldmethod = "manual"
+        end
     end,
-    desc = "Disable expensive features for large files"
+    desc = "Disable expensive features for large buffers",
 })
 
--- LSP folding: switch to LSP foldexpr/foldtext when server supports textDocument/foldingRange
-vim.api.nvim_create_autocmd("LspAttach", {
+local function update_folds(bufnr)
+    if not vim.api.nvim_buf_is_valid(bufnr) or require("config.buffer").is_large(bufnr) then return end
+    local has_lsp = #vim.lsp.get_clients({ bufnr = bufnr, method = "textDocument/foldingRange" }) > 0
+    for _, win in ipairs(vim.fn.win_findbuf(bufnr)) do
+        vim.wo[win].foldexpr = has_lsp and "v:lua.vim.lsp.foldexpr()" or "v:lua.vim.treesitter.foldexpr()"
+        vim.wo[win].foldtext = has_lsp and "v:lua.vim.lsp.foldtext()" or "foldtext()"
+    end
+end
+
+autocmd({ "LspAttach", "LspDetach", "BufWinEnter" }, {
+    group = group "ConfigFolding",
     callback = function(args)
-        local client = vim.lsp.get_client_by_id(args.data.client_id)
-        if client and client:supports_method("textDocument/foldingRange") then
-            vim.wo.foldexpr = "v:lua.vim.lsp.foldexpr()"
-            vim.wo.foldtext = "v:lua.vim.lsp.foldtext()"
-        end
+        -- LspDetach fires before the client has been removed from the buffer.
+        vim.schedule(function() update_folds(args.buf) end)
     end,
+    desc = "Select native LSP or Tree-sitter folds for each buffer window",
 })
 -- ============================================================
 -- TSInstallAll: install all Treesitter parsers from ensure_installed list

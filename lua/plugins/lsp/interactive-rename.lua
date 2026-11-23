@@ -109,12 +109,16 @@ return function()
         local symbol = result.placeholder
         local range = result.range or (result.start and result)
         if not symbol and range then
+            local function byte_column(position)
+                local line = api.nvim_buf_get_lines(source_buf, position.line, position.line + 1, false)[1] or ""
+                return vim.str_byteindex(line, client.offset_encoding, position.character, false)
+            end
             symbol = api.nvim_buf_get_text(
                 source_buf,
                 range.start.line,
-                lsp.util._get_line_byte_from_position(source_buf, range.start, client.offset_encoding),
+                byte_column(range.start),
                 range["end"].line,
-                lsp.util._get_line_byte_from_position(source_buf, range["end"], client.offset_encoding),
+                byte_column(range["end"]),
                 {}
             )[1]
         end

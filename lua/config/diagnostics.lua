@@ -1,8 +1,6 @@
 local M = {}
 
--- Native 0.12 diagnostics: virtual_lines.current_line provides IDE-like
--- inline diagnostic display on the current line, updating automatically
--- on CursorHold. No custom timer or autocmd machinery needed.
+-- Native diagnostics display virtual lines only for the current line.
 vim.diagnostic.config({
     virtual_text = false,
     virtual_lines = {
@@ -24,7 +22,7 @@ vim.diagnostic.config({
     severity_sort = true,
 })
 
--- DiagnosticDelay command sets updatetime, which drives native CursorHold.
+-- Retained command alias for tuning CursorHold; virtual lines have no delay option.
 vim.api.nvim_create_user_command("DiagnosticDelay", function(opts)
     local new_delay = tonumber(opts.args)
     if not new_delay or new_delay < 10 then
@@ -32,10 +30,10 @@ vim.api.nvim_create_user_command("DiagnosticDelay", function(opts)
         return
     end
     vim.opt.updatetime = new_delay
-    vim.notify(string.format("Diagnostic popup delay set to %dms", new_delay), vim.log.levels.INFO)
+    vim.notify(string.format("CursorHold interval set to %dms", new_delay), vim.log.levels.INFO)
 end, {
     nargs = 1,
-    desc = "Set diagnostic popup delay in milliseconds (via updatetime)",
+    desc = "Set CursorHold interval in milliseconds",
 })
 
 M.toggle = function()

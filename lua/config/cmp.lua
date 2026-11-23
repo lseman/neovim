@@ -131,30 +131,21 @@ return function()
 
             providers = {
                 lsp = {
-                    opts = {
-                        max_item_count = 12,
-                        priority = 1000,
-                        enable = true,
-                    },
+                    max_items = 12,
+                    score_offset = 4,
                 },
                 snippets = {
-                    opts = {
-                        max_item_count = 8,
-                        priority = 750,
-                    },
+                    max_items = 8,
+                    score_offset = 2,
                 },
                 path = {
-                    opts = {
-                        max_item_count = 8,
-                        priority = 500,
-                    },
+                    max_items = 8,
+                    score_offset = 0,
                 },
                 buffer = {
-                    opts = {
-                        max_item_count = 10,
-                        priority = 250,
-                        keyword_length = 2,
-                    },
+                    max_items = 10,
+                    score_offset = -2,
+                    min_keyword_length = 2,
                 },
             },
         },

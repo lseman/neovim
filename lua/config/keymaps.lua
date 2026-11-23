@@ -55,7 +55,7 @@ map(
             vim.cmd "stopinsert"
         end
         if mode:find "[vV]" then
-            vim.cmd "normal! <Esc>"
+            vim.cmd.normal({ args = { vim.keycode("<Esc>") }, bang = true })
         end
         vim.schedule(smart_quit)
     end,
@@ -236,7 +236,7 @@ map(
         if mode:find "i" then
             vim.cmd "stopinsert"
         elseif mode:find "[vV]" then
-            vim.cmd "normal! <Esc>"
+            vim.cmd.normal({ args = { vim.keycode("<Esc>") }, bang = true })
         end
 
         vim.schedule(function()
